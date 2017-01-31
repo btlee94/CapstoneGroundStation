@@ -54,6 +54,7 @@ public class SetupPage extends JFrame {
 
 	/**
 	 * Create the frame.
+	 * TODO add checkbox or switch to enable/disable video feed; pass bodyCount and faceDetect (any other script parameters) to control page - control page will handle scripts
 	 */
 	public SetupPage() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
