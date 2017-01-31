@@ -6,3 +6,6 @@ This is part of our Capstone Engineering Project developing a groundstation for 
 
 VLCJ
 https://github.com/caprica/vlcj
+
+DroneKit Python
+https://github.com/dronekit/dronekit-python
