@@ -41,9 +41,12 @@ public class ControlPage extends JFrame {
 	private ScheduledFuture<?> droneStatsHandler;
 	private JTextArea droneStats;
 	private BufferedReader pyConsolInpt;
+	//define path to python.exe and any scripts that need to be run
+	//TODO be aware of path differences between Windows and Linux; Win = \\ Linux = /
 	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
 	private static final String pythonExePath = "C:\\Python27\\python.exe ";
 	//define patterns for parsing vehicleStats.py output
+	//TODO these patterns look for a number and then end of line; likely need to change assuming there are units after the numbers
 	private static final List<Pattern> regexs = Arrays.asList(
 					Pattern.compile("Vehicle state:$"),
 					Pattern.compile("\\sRelative\\sAltitude:\\s\\d*$"),
@@ -66,6 +69,7 @@ public class ControlPage extends JFrame {
 					 UIManager.getSystemLookAndFeelClassName());
 					    
 					ControlPage frame = new ControlPage(true);
+					frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -179,7 +183,7 @@ public class ControlPage extends JFrame {
 		add(leftPanel, BorderLayout.WEST);
 		add(splitPane, BorderLayout.CENTER);
 		pack();
-		setSize(720, 480);
+		setSize(1280, 720);
 	}
 	
 	/**
@@ -201,6 +205,7 @@ public class ControlPage extends JFrame {
 	/**
 	 * Read current values of drones attributes from vehicleStats.py and update textView
 	 * NOTE: Never done regular expression before so if there is a better way to do this please fix
+	 * TODO include body count updates here - as of now, not sure where that value will come from 
 	 */
 	private void updateUI(){
 		
@@ -229,7 +234,7 @@ public class ControlPage extends JFrame {
 	
 	/**
 	 * Execute python scripts required for flight
-	 * TODO add Simon's scripts through SSH here as well
+	 * TODO add Simon's scripts through SSH here
 	 * @throws IOException
 	 */
 	private void executeLaunchScripts() throws IOException{
