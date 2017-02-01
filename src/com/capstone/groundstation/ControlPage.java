@@ -32,10 +32,12 @@ import java.awt.*;
  *
  */
 public class ControlPage extends JFrame {
+	private static final long serialVersionUID = 1L;
 	private boolean videoOn = false;
 	private EmbeddedMediaPlayerComponent mediaPlayerComponent;
 	private ScheduledFuture<?> droneStatsHandler;
 	private JTextArea droneStats;
+	private JLabel vidAnalytics;
 	private BufferedReader pyConsolInpt;
 	//define path to python.exe and any scripts that need to be run
 	//TODO be aware of path differences between Windows and Linux; Win = \\ Linux = /
@@ -99,17 +101,22 @@ public class ControlPage extends JFrame {
 	        System.out.println(LibVlc.INSTANCE.libvlc_get_version());
 		}
 		
+		//draw the window components
+		createGUI();	
 		
-		createGUI();
+		// execute launch python scripts
 		try {
-			executeLaunchScripts();	// execute necessary python scripts
+			executeLaunchScripts();	
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		readDroneStats();
+		
+		//initiate thread for reading drone stats and updating the window
+		readDroneStats();	
+		
+		//initiate video feed if selected
 		if(videoOn)
-			playVideoFeed();
+			playVideoFeed();	
 	}
 	
 	/**
@@ -118,14 +125,20 @@ public class ControlPage extends JFrame {
 	 */
 	private void createGUI(){
 		JPanel leftPanel = new JPanel(new BorderLayout());
+		JPanel statsPanel = new JPanel();
+		statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
 		JPanel vidPanel = new JPanel(new BorderLayout());
 		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		splitPane.setDividerSize(10);
+		splitPane.setBorder(BorderFactory.createEmptyBorder());
 		
-		JScrollPane scrollPane = new JScrollPane();
 		droneStats = new JTextArea();
 		droneStats.setEditable(false);
 		droneStats.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		scrollPane.setViewportView(droneStats);
+		droneStats.setBackground(null);
+		droneStats.setRows(8);
+		JScrollPane scrollPane  = new JScrollPane(droneStats);
+		scrollPane.setBorder(BorderFactory.createEmptyBorder());
 		
 		JButton abortButton = new JButton("Abort");
 		abortButton.setPreferredSize(new Dimension(200, 60));
@@ -151,15 +164,28 @@ public class ControlPage extends JFrame {
 			}
 		});
 		
-		JLabel label = new JLabel(" Drone Attributes");
-		label.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		label.setForeground(new Color(0, 153, 255));
 		
-		leftPanel.add(scrollPane, BorderLayout.CENTER);
+		JLabel attributesLabel = new JLabel("Drone Attributes");
+		attributesLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		attributesLabel.setForeground(new Color(0, 153, 255));
+		
+		JLabel analyticsLabel = new JLabel("Video Analytics");
+		analyticsLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		analyticsLabel.setForeground(new Color(0, 153, 255));
+		
+		vidAnalytics = new JLabel();
+		vidAnalytics.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		
+		statsPanel.add(attributesLabel);
+		statsPanel.add(scrollPane);
+		statsPanel.add(analyticsLabel);
+		statsPanel.add(vidAnalytics);
+		
+		
+		leftPanel.add(statsPanel, BorderLayout.NORTH);
 		leftPanel.add(abortButton, BorderLayout.SOUTH);
-		leftPanel.add(label, BorderLayout.NORTH);
 		
-		
+	
 		final Browser browser = new Browser();
 		browser.loadURL("https://www.bing.com/maps/");	//Test purposes only; replace with URL for tower app
 		BrowserView browserView = new BrowserView(browser);
@@ -223,9 +249,14 @@ public class ControlPage extends JFrame {
 							attributes.setLength(0);
 					}
 				}
+				
+				/**
+				 * TODO fetch analytics data and update here
+				 */
+				
+				vidAnalytics.setText("Body Count: 4");	//testing purposes only
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
