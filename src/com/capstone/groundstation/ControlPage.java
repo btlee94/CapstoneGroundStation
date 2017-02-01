@@ -1,21 +1,17 @@
 package com.capstone.groundstation;
 
-import java.awt.BorderLayout;
-import java.awt.EventQueue;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.ProcessBuilder.Redirect;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.awt.event.ActionEvent;
 
@@ -128,13 +124,14 @@ public class ControlPage extends JFrame {
 		JScrollPane scrollPane = new JScrollPane();
 		droneStats = new JTextArea();
 		droneStats.setEditable(false);
+		droneStats.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		scrollPane.setViewportView(droneStats);
 		
 		JButton abortButton = new JButton("Abort");
 		abortButton.setPreferredSize(new Dimension(200, 60));
 		abortButton.setFont(new Font("Tahoma", Font.PLAIN, 30));
 		abortButton.setContentAreaFilled(false);
-		abortButton.setBackground(Color.RED);
+		abortButton.setBackground(new Color(213, 0, 0));
 		abortButton.setForeground(Color.WHITE);
 		abortButton.setOpaque(true);
 		abortButton.addActionListener(new ActionListener() {
@@ -148,15 +145,15 @@ public class ControlPage extends JFrame {
 				//close control page and return to setup page
 				dispose();
 				SetupPage setupPage = new SetupPage();
+				//setupPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 				setupPage.setVisible(true);
 				
 			}
 		});
 		
 		JLabel label = new JLabel(" Drone Attributes");
-		label.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		label.setBackground(Color.LIGHT_GRAY);
-		label.setOpaque(true);
+		label.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		label.setForeground(new Color(0, 153, 255));
 		
 		leftPanel.add(scrollPane, BorderLayout.CENTER);
 		leftPanel.add(abortButton, BorderLayout.SOUTH);
@@ -164,9 +161,10 @@ public class ControlPage extends JFrame {
 		
 		
 		final Browser browser = new Browser();
+		browser.loadURL("https://www.bing.com/maps/");	//Test purposes only; replace with URL for tower app
 		BrowserView browserView = new BrowserView(browser);
 		browserView.setMinimumSize(new Dimension(10, 60));
-		browser.loadURL("https://www.bing.com/maps/");	//Test purposes only; replace with URL for tower app
+		
 		
 		splitPane.setTopComponent(browserView);
 		

@@ -5,34 +5,35 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JToggleButton;
 import javax.swing.UIManager;
-import javax.swing.border.EmptyBorder;
-import javax.swing.plaf.ButtonUI;
+import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
-import java.awt.GridLayout;
-import javax.swing.JCheckBoxMenuItem;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
+
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import javax.swing.JCheckBox;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * 
- * @author Veronica Eaton
+ * @authors Veronica Eaton, Brandon Lee
  *
  */
 public class SetupPage extends JFrame {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
+	private boolean bodyCount = false;
+	private boolean videoOn = false;
 	
-	public boolean bodyCount= true;
-	public boolean faceDetect=false;
-	
-	private JPanel contentPane;
 
 	/**
 	 * Launch the application.
@@ -43,7 +44,9 @@ public class SetupPage extends JFrame {
 				try {
 					UIManager.setLookAndFeel(
 					UIManager.getSystemLookAndFeelClassName());
+					
 					SetupPage frame = new SetupPage();
+					//frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -53,127 +56,107 @@ public class SetupPage extends JFrame {
 	}
 
 	/**
-	 * Create the frame.
-	 * TODO add checkbox or switch to enable/disable video feed; pass bodyCount and faceDetect (any other script parameters) to control page - control page will handle scripts
+	 * Construct the frame.
+	 * TODO pass bodyCount and any other script parameters to control page as flags - control page will handle scripts
 	 */
 	public SetupPage() {
+		super("Ground Station");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
-		contentPane = new JPanel();
-		//contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));	not needed
-		setContentPane(contentPane);
-		contentPane.setLayout(new GridLayout(5, 5, 1, 1));
 		
-		JPanel panel = new JPanel();
-		//panel.setBorder(null);	not needed
-		contentPane.add(panel);
+		createGUI();
+	}
+	
+	/**
+	 * Place elements in a border layout
+	 */
+	private void createGUI(){
+		JPanel leftPanel = new JPanel(new BorderLayout());
+		JPanel mapPanel = new JPanel(new BorderLayout());
+		JPanel featuresPanel = new JPanel();
+		featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
 		
-		/*
-		JTextArea txtrSelectAnalyticFeatures = new JTextArea();
-		panel.add(txtrSelectAnalyticFeatures);
-		txtrSelectAnalyticFeatures.setEditable(false);
-		txtrSelectAnalyticFeatures.setForeground(new Color(0, 153, 255));
-		txtrSelectAnalyticFeatures.setFont(new Font("Tahoma", Font.PLAIN, 19));
-		txtrSelectAnalyticFeatures.setText("Select Analytic Features:");
-		*/
-		
-		/**
-		 * Added by Brandon Lee
-		 * Use JLabel instead of JTextArea for a header
-		 */
-		JLabel titleLabel = new JLabel("Select Analytic Features:");
-		titleLabel.setForeground(new Color(0, 153, 255));
-		titleLabel.setFont(new Font("Tahoma", Font.PLAIN, 19));
-		panel.add(titleLabel);
-		
-		JPanel panel_4 = new JPanel();
-		//panel_4.setBorder(null);	not needed
-		contentPane.add(panel_4);
-		
-		JCheckBoxMenuItem chckbxmntmNewCheckItem = new JCheckBoxMenuItem("Body Count");
-		chckbxmntmNewCheckItem.addMouseListener(new MouseAdapter() {
+		JButton abortButton = new JButton("Launch Drone");
+		abortButton.setPreferredSize(new Dimension(200, 60));
+		abortButton.setFont(new Font("Tahoma", Font.PLAIN, 25));
+		abortButton.setContentAreaFilled(false);
+		abortButton.setBackground(new Color(0, 153, 255));
+		abortButton.setForeground(Color.WHITE);
+		abortButton.setOpaque(true);
+		abortButton.addActionListener(new ActionListener() {
 			@Override
-			public void mouseClicked(MouseEvent e) {
-				//bodyCount = true;
-				
-				/**
-				 * Added by Brandon Lee
-				 */
-				if(!bodyCount)
-					bodyCount = true;
-				else
-					bodyCount = false;
-			}
-		});
-		panel_4.add(chckbxmntmNewCheckItem);
-		chckbxmntmNewCheckItem.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		
-		JCheckBoxMenuItem chckbxmntmNewCheckItem_1 = new JCheckBoxMenuItem("Face Detection");
-		chckbxmntmNewCheckItem_1.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				//faceDetect = true;
-				
-				/**
-				 * Added by Brandon Lee
-				 */
-				if(!faceDetect)
-					faceDetect = true;
-				else
-					faceDetect = false;
-			}
-			
-		});
-		panel_4.add(chckbxmntmNewCheckItem_1);
-		chckbxmntmNewCheckItem_1.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		
-		JPanel panel_1 = new JPanel();
-		contentPane.add(panel_1);
-		
-		JButton btnNewButton = new JButton("Launch Drone");
-		btnNewButton.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				/**
-				 * Added by Brandon Lee
-				 * close current window and launch control page
-				 */
+			public void actionPerformed(ActionEvent e) {
+				//close window and open control page
 				dispose();
 				
 				ControlPage controlPage = new ControlPage(true);
+				controlPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 				controlPage.setVisible(true);
+
 			}
 		});
-		panel_1.add(btnNewButton);
-		btnNewButton.setFont(new Font("Tahoma", Font.PLAIN, 18));
-		btnNewButton.setForeground(new Color(0, 153, 255));
 		
+		JLabel label = new JLabel(" Drone Features");
+		label.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		label.setForeground(new Color(0, 153, 255));
+
+		JCheckBox bodyCountBox = new JCheckBox("Body Count Analytics");
+		bodyCountBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		
-		JPanel panel_3 = new JPanel();
-		//panel_3.setBorder(null);	not needed
-		contentPane.add(panel_3);
+		JCheckBox videoFeedBox = new JCheckBox("Live Video Feed");
+		videoFeedBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		
-		/* Gonna embed map directly in frame instead of launching from another button
-		 *
-		JButton btnNewButton_1 = new JButton("Map");
-		btnNewButton_1.addMouseListener(new MouseAdapter() {
+		//action listeners for each checkbox - since we can't do anaytics and video simultaneously, only one can be selected at a time
+		bodyCountBox.addActionListener(new ActionListener() {
 			@Override
-			public void mouseClicked(MouseEvent e) {
+			public void actionPerformed(ActionEvent e) {
+				if(videoFeedBox.isSelected()){
+					videoFeedBox.setSelected(false);
+					videoOn = false;
+				}
 				
-				
-				//embeded map event goes here
+				bodyCount = true;
 			}
 		});
-		panel_3.add(btnNewButton_1);
-		btnNewButton_1.setFont(new Font("Tahoma", Font.PLAIN, 18));
-		btnNewButton_1.setForeground(new Color(0, 153, 255));
-		*/
+		
+		videoFeedBox.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if(bodyCountBox.isSelected()){
+					bodyCountBox.setSelected(false);
+					bodyCount = false;
+				}
+				
+				videoOn = true;
+			}
+		});
+		
+
+		featuresPanel.add(label);
+		featuresPanel.add(bodyCountBox);
+		featuresPanel.add(videoFeedBox);
+		
+		leftPanel.add(featuresPanel, BorderLayout.NORTH);
+		leftPanel.add(abortButton, BorderLayout.SOUTH);
+		
 		
 		/**
-		 * Added by Brandon Lee
+		 * TODO embedded maps application will likely need interaction with this code
+		 * browserView is the container that is used in the GUI - don't touch
+		 * browser is the web wrapper 
 		 */
+		final Browser browser = new Browser();
+		browser.loadURL("https://www.bing.com/maps/");	
+		BrowserView browserView = new BrowserView(browser);
+		browserView.setMinimumSize(new Dimension(10, 60));
+		
+		
+		getContentPane();
+		add(leftPanel, BorderLayout.WEST);
+		add(browserView, BorderLayout.CENTER);
 		pack();
-		setSize(720, 480);
+		setSize(1280, 720);
 	}
+	
 
 }

@@ -3,7 +3,7 @@ import time
 import sys
 from stat import *
 
-x = 10
+x = 20
 num = 0
 while (x > 0):
 
