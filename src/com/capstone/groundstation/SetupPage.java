@@ -9,6 +9,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import com.teamdev.jxbrowser.chromium.Browser;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
@@ -83,14 +84,14 @@ public class SetupPage extends JFrame {
 		JPanel featuresPanel = new JPanel();
 		featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
 		
-		JButton abortButton = new JButton("Launch Drone");
-		abortButton.setPreferredSize(new Dimension(200, 60));
-		abortButton.setFont(new Font("Tahoma", Font.PLAIN, 25));
-		abortButton.setContentAreaFilled(false);
-		abortButton.setBackground(new Color(0, 153, 255));
-		abortButton.setForeground(Color.WHITE);
-		abortButton.setOpaque(true);
-		abortButton.addActionListener(new ActionListener() {
+		JButton launchButton = new JButton("Launch Drone");
+		launchButton.setPreferredSize(new Dimension(200, 60));
+		launchButton.setFont(new Font("Tahoma", Font.PLAIN, 25));
+		launchButton.setContentAreaFilled(false);
+		launchButton.setBackground(new Color(0, 153, 255));
+		launchButton.setForeground(Color.WHITE);
+		launchButton.setOpaque(true);
+		launchButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//close window and open control page
@@ -109,9 +110,11 @@ public class SetupPage extends JFrame {
 
 		JCheckBox bodyCountBox = new JCheckBox("Body Count Analytics");
 		bodyCountBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		bodyCountBox.setFocusPainted(false);
 		
 		JCheckBox videoFeedBox = new JCheckBox("Live Video Feed");
 		videoFeedBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		videoFeedBox.setFocusPainted(false);
 		
 		//action listeners for each checkbox - since we can't do anaytics and video simultaneously, only one can be selected at a time
 		bodyCountBox.addActionListener(new ActionListener() {
@@ -154,7 +157,7 @@ public class SetupPage extends JFrame {
 		
 		leftPanel.add(featuresPanel, BorderLayout.NORTH);
 		leftPanel.add(scrollPane, BorderLayout.CENTER);
-		leftPanel.add(abortButton, BorderLayout.SOUTH);
+		leftPanel.add(launchButton, BorderLayout.SOUTH);
 		
 		
 		browser = new Browser();	
