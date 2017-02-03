@@ -174,11 +174,9 @@ public class SetupPage extends JFrame {
 	
 	/**
 	 * TODO embed maps application
-	 * not sure how it will work; browser is the web wrapper object you will likely need to use
-	 * keep outside of createGUI
 	 */
 	public void mapApp(){
-		browser.loadURL("https://www.bing.com/maps/"); //testing purposes only
+		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
 	}
 	
 	/**

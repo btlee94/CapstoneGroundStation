@@ -178,8 +178,10 @@ public class ControlPage extends JFrame {
 		
 		statsPanel.add(attributesLabel);
 		statsPanel.add(scrollPane);
-		statsPanel.add(analyticsLabel);
-		statsPanel.add(vidAnalytics);
+		if(!videoOn){	//no analytics if video is playing for now
+			statsPanel.add(analyticsLabel);
+			statsPanel.add(vidAnalytics);
+		}
 		
 		
 		leftPanel.add(statsPanel, BorderLayout.NORTH);
@@ -187,7 +189,7 @@ public class ControlPage extends JFrame {
 		
 	
 		final Browser browser = new Browser();
-		browser.loadURL("https://www.bing.com/maps/");	//Test purposes only; replace with URL for tower app
+		browser.loadURL("https://www.google.ca/maps/");	//Test purposes only; replace with URL for tower app
 		BrowserView browserView = new BrowserView(browser);
 		browserView.setMinimumSize(new Dimension(10, 60));
 		
@@ -253,8 +255,8 @@ public class ControlPage extends JFrame {
 				/**
 				 * TODO fetch analytics data and update here
 				 */
-				
-				vidAnalytics.setText("Body Count: 4");	//testing purposes only
+				if(!videoOn)
+					vidAnalytics.setText("Body Count: 4");	//testing purposes only
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -281,7 +283,7 @@ public class ControlPage extends JFrame {
 	
 	/**
 	 * Execute python scripts required for a ReturnToHome
-	 * NOTE: not sure if this is needed - will leave anyway
+	 * Not sure if these will be local or through SSH
 	 * @throws IOException
 	 */
 	private void executeAbortScripts() throws IOException{
@@ -298,11 +300,7 @@ public class ControlPage extends JFrame {
 	 * Play video feed from drone
 	 */
 	private void playVideoFeed(){
-		mediaPlayerComponent.getMediaPlayer().playMedia("droneFootage.mkv");	//testing purposes only
+		mediaPlayerComponent.getMediaPlayer().playMedia("droneFootage.mkv");	//testing purposes only; replace with path to .sdp file
 		
-		/***********
-		 * I dont know the specifics of our video stream so i cant implement or test it but heres a link to a tutorial for streaming RTP
-		 * https://github.com/caprica/vlcj/blob/master/src/test/java/uk/co/caprica/vlcj/test/streaming/StreamRtp.java
-		 */
 	}
 }
