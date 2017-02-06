@@ -54,6 +54,7 @@ import java.awt.*;
 public class ControlPage extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private boolean videoOn = false;
+	private boolean bodyCount = false;
 	private EmbeddedMediaPlayerComponent mediaPlayerComponent;
 	private ScheduledFuture<?> droneStatsHandler;
 	private JTextArea droneStats;
@@ -87,7 +88,7 @@ public class ControlPage extends JFrame {
 					 UIManager.setLookAndFeel(
 					 UIManager.getSystemLookAndFeelClassName());
 					    
-					ControlPage frame = new ControlPage(true);
+					ControlPage frame = new ControlPage(true, false);
 					frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 					frame.setVisible(true);
 				} catch (Exception e) {
@@ -101,7 +102,7 @@ public class ControlPage extends JFrame {
 	 * Construct the frame.
 	 * @param vidOn is a flag for enabling live stream of drone camera
 	 */
-	public ControlPage(boolean vidOn) {
+	public ControlPage(boolean vidOn, boolean bodyCount) {
 		super("Ground Station");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -116,6 +117,8 @@ public class ControlPage extends JFrame {
 		});
 		
 		this.videoOn = vidOn;
+		this.bodyCount = bodyCount;
+		
 		if(videoOn){	//find libVLC
 			boolean found = new NativeDiscovery().discover();
 	        System.out.println(found);

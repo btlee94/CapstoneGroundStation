@@ -58,7 +58,7 @@ public class SetupPage extends JFrame {
 	private Browser browser;
 	private JTextArea waypoints;
 	private boolean bodyCount = false;
-	private boolean videoOn = false;
+	private boolean vidOn = false;
 	private int waypointNum = 1;
 	private StringBuilder currentPoints = new StringBuilder();
 	
@@ -120,7 +120,7 @@ public class SetupPage extends JFrame {
 				//close window and open control page
 				dispose();
 				
-				ControlPage controlPage = new ControlPage(videoOn);
+				ControlPage controlPage = new ControlPage(vidOn, bodyCount);
 				controlPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 				controlPage.setVisible(true);
 			}
@@ -145,7 +145,7 @@ public class SetupPage extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(videoFeedBox.isSelected()){
 					videoFeedBox.setSelected(false);
-					videoOn = false;
+					vidOn = false;
 				}
 				
 				bodyCount = true;
@@ -161,7 +161,7 @@ public class SetupPage extends JFrame {
 					bodyCount = false;
 				}
 				
-				videoOn = true;
+				vidOn = true;
 			}
 		});
 		
@@ -199,7 +199,7 @@ public class SetupPage extends JFrame {
 	 * TODO embed maps application
 	 */
 	public void mapApp(){
-		browser.loadURL("C:\\Users\\brand\\Desktop\\map.html"); //testing purposes only
+		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
 		updateUI(51.077269, -114.129303);	//call updateUI with coordinates extracted from map
 		//test data to see what it looks like with multiple waypoints
 		updateUI(51.077269, -114.129303);
