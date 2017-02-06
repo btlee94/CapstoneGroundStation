@@ -12,6 +12,7 @@ import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.internal.ipc.LatchUtil;
 import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
 import java.awt.BorderLayout;
@@ -38,6 +39,8 @@ public class SetupPage extends JFrame {
 	private JTextArea waypoints;
 	private boolean bodyCount = false;
 	private boolean videoOn = false;
+	private int waypointNum = 1;
+	private StringBuilder currentPoints = new StringBuilder();
 	
 
 	/**
@@ -176,14 +179,28 @@ public class SetupPage extends JFrame {
 	 * TODO embed maps application
 	 */
 	public void mapApp(){
-		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
+		browser.loadURL("C:\\Users\\brand\\Desktop\\map.html"); //testing purposes only
+		updateUI(51.077269, -114.129303);	//call updateUI with coordinates extracted from map
+		//test data to see what it looks like with multiple waypoints
+		updateUI(51.077269, -114.129303);
+		updateUI(51.077269, -114.129303);
+		updateUI(51.077269, -114.129303);
+		updateUI(51.077269, -114.129303);
 	}
 	
 	/**
 	 * update screen with waypoint coordinates extracted from map
 	 */
-	public void updateUI(){
+	public void updateUI(double lon, double lat){
+		String entry = System.lineSeparator() + 
+				"Waypoint " + waypointNum + 
+				System.lineSeparator() + 
+				"Lon: " + lon + " " +
+				"Lat: " + lat + 
+				System.lineSeparator();
 		
+		currentPoints.append(entry);
+		waypoints.setText(currentPoints.toString());
+		waypointNum++;
 	}
-
 }

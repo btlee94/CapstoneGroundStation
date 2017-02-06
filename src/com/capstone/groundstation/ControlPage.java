@@ -43,6 +43,7 @@ public class ControlPage extends JFrame {
 	//TODO be aware of path differences between Windows and Linux; Win = \\ Linux = /
 	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
 	private static final String pythonExePath = "C:\\Python27\\python.exe ";
+	private static final String videoFeedParamsPath = "droneFootage.mkv";	//TODO change to path to sdp file
 	//define patterns for parsing vehicleStats.py output
 	//TODO these patterns look for a number and then end of line; likely need to change assuming there are units after the numbers
 	private static final List<Pattern> regexs = Arrays.asList(
@@ -300,7 +301,6 @@ public class ControlPage extends JFrame {
 	 * Play video feed from drone
 	 */
 	private void playVideoFeed(){
-		mediaPlayerComponent.getMediaPlayer().playMedia("droneFootage.mkv");	//testing purposes only; replace with path to .sdp file
-		
+		mediaPlayerComponent.getMediaPlayer().playMedia(videoFeedParamsPath);	//testing purposes only; replace with path to .sdp file
 	}
 }
