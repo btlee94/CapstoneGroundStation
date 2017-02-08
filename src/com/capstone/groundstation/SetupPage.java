@@ -47,6 +47,7 @@ import javax.swing.JCheckBox;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 /**
  * 
@@ -56,11 +57,12 @@ import java.awt.event.ActionListener;
 public class SetupPage extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private Browser browser;
-	private JTextArea waypoints;
+	private JTextArea waypointArea;
 	private boolean bodyCount = false;
 	private boolean vidOn = false;
 	private int waypointNum = 1;
 	private StringBuilder currentPoints = new StringBuilder();
+	//private ArrayList<Waypoint> waypoints = new ArrayList<>();
 	
 
 	/**
@@ -166,12 +168,12 @@ public class SetupPage extends JFrame {
 		});
 		
 		
-		waypoints = new JTextArea();
-		waypoints.setEditable(false);
-		waypoints.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		waypoints.setBackground(null);
+		waypointArea = new JTextArea();
+		waypointArea.setEditable(false);
+		waypointArea.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		waypointArea.setBackground(null);
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setViewportView(waypoints);
+		scrollPane.setViewportView(waypointArea);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
 		featuresPanel.add(label);
@@ -197,30 +199,49 @@ public class SetupPage extends JFrame {
 	
 	/**
 	 * TODO embed maps application
+	 * this is only a stub method; chances are waypoint extraction and call to updateUI will be done from mapClickListener instead of here
 	 */
 	public void mapApp(){
 		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
-		updateUI(51.077269, -114.129303);	//call updateUI with coordinates extracted from map
 		//test data to see what it looks like with multiple waypoints
-		updateUI(51.077269, -114.129303);
-		updateUI(51.077269, -114.129303);
-		updateUI(51.077269, -114.129303);
-		updateUI(51.077269, -114.129303);
+		//TODO remove; add coordinates to waypoints list as Waypoint objects and call updateUI once after every update to the list
+		updateUI();	
+		updateUI();
+		updateUI();
+		updateUI();
+		updateUI();
 	}
 	
 	/**
 	 * update screen with waypoint coordinates extracted from map
 	 */
-	public void updateUI(double lon, double lat){
+	public void updateUI(){
+		/*******
+		 * TODO this is for UI testing only; remove and use below code instead; delete waypointNum variable
+		 */
 		String entry = System.lineSeparator() + 
 				"Waypoint " + waypointNum + 
 				System.lineSeparator() + 
-				"Lon: " + lon + " " +
-				"Lat: " + lat + 
+				"Lon: " + 51.077269 + " " +
+				"Lat: " + -114.129303 + 
 				System.lineSeparator();
 		
-		currentPoints.append(entry);
-		waypoints.setText(currentPoints.toString());
 		waypointNum++;
+		
+		/********
+		 * TODO use this instead of above code
+		 * might need to be modified as ive written this based on jxmapviewer documentation alone
+		 *
+		for(int i = 0; i < waypoints.size(); i++){
+			String entry = System.lineSeparator() + 
+					"Waypoint " + i + 
+					System.lineSeparator() + 
+					"Lon: " + waypoints.get(i).getPosition().getLatitude() + " " +
+					"Lat: " + waypoints.get(i).getPosition().getLongitude() + 
+					System.lineSeparator();
+		}
+		*/
+		currentPoints.append(entry);
+		waypointArea.setText(currentPoints.toString());
 	}
 }
