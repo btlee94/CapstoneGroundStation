@@ -119,6 +119,10 @@ public class SetupPage extends JFrame {
 		launchButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				//don't do anything unless one of the check boxes has been selected
+				if(!vidOn && !bodyCount)
+					return;
+				
 				//close window and open control page
 				dispose();
 				
