@@ -31,24 +31,46 @@ import javax.swing.JTextArea;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
-import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.internal.ipc.LatchUtil;
-import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+//import com.teamdev.jxbrowser.chromium.Browser;
+//import com.teamdev.jxbrowser.chromium.internal.ipc.LatchUtil;
+//import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Point;
+import java.awt.Rectangle;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.event.MouseInputAdapter;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+import java.awt.geom.Point2D;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
+import org.jxmapviewer.JXMapKit;
+import org.jxmapviewer.JXMapViewer;
+import org.jxmapviewer.OSMTileFactoryInfo;
+import org.jxmapviewer.viewer.DefaultTileFactory;
+import org.jxmapviewer.viewer.DefaultWaypoint;
+import org.jxmapviewer.viewer.GeoPosition;
+import org.jxmapviewer.viewer.TileFactoryInfo;
+import org.jxmapviewer.viewer.Waypoint;
+import org.jxmapviewer.viewer.WaypointPainter;
+import org.jxmapviewer.painter.CompoundPainter;
+import org.jxmapviewer.painter.Painter;
 /**
  * 
  * @authors Veronica Eaton, Brandon Lee
@@ -56,13 +78,24 @@ import java.util.ArrayList;
  */
 public class SetupPage extends JFrame {
 	private static final long serialVersionUID = 1L;
-	private Browser browser;
+//	private Browser browser;
 	private JTextArea waypointArea;
 	private boolean bodyCount = false;
 	private boolean vidOn = false;
 	private int waypointNum = 1;
 	private StringBuilder currentPoints = new StringBuilder();
 	//private ArrayList<Waypoint> waypoints = new ArrayList<>();
+	
+	private JXMapKit jXMapKit;
+	
+	private TileFactoryInfo info;
+	private DefaultTileFactory tileFactory;
+
+	private WaypointPainter<Waypoint> waypointPainter;
+	private List<Painter<JXMapViewer>> painters;
+	private CompoundPainter<JXMapViewer> painter;
+	private Set<Waypoint> wps;
+	private DefaultWaypoint wp;
 	
 
 	/**
@@ -98,7 +131,7 @@ public class SetupPage extends JFrame {
 		createGUI();
 		
 		//initiate embedded maps application
-		mapApp();
+		//mapApp();
 	}
 	
 	/**
@@ -107,6 +140,13 @@ public class SetupPage extends JFrame {
 	private void createGUI(){
 		JPanel leftPanel = new JPanel(new BorderLayout());
 		JPanel featuresPanel = new JPanel();
+		
+		JPanel buttonPanel = new JPanel(new BorderLayout());
+		
+		buttonPanel.setPreferredSize(new Dimension(200,120));
+		
+		JPanel rightPanel = new JPanel(new BorderLayout());
+		
 		featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
 		
 		JButton launchButton = new JButton("Launch Drone");
@@ -132,16 +172,38 @@ public class SetupPage extends JFrame {
 			}
 		});
 		
+		JButton clearPoints = new JButton("Clear Flags");
+		clearPoints.setPreferredSize(new Dimension(200, 60));
+		clearPoints.setFont(new Font("Tahoma", Font.PLAIN, 25));
+		clearPoints.setContentAreaFilled(false);
+		clearPoints.setBackground(new Color(69, 119, 198));
+		clearPoints.setForeground(Color.WHITE);
+		clearPoints.setOpaque(true);
+		clearPoints.addActionListener(new ActionListener(){
+			
+			public void actionPerformed(ActionEvent e){
+				
+				wps.clear();
+				waypointPainter.setWaypoints(wps);
+				
+				waypointArea.setText("");
+				currentPoints.setLength(0);
+				waypointNum = 1;
+				jXMapKit.getMainMap().repaint();
+			}
+		});
+		
+		
 		
 		JLabel label = new JLabel(" Drone Features");
 		label.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		label.setForeground(new Color(0, 153, 255));
 
-		JCheckBox bodyCountBox = new JCheckBox("Body Count Analytics");
+		final JCheckBox bodyCountBox = new JCheckBox("Body Count Analytics");
 		bodyCountBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		bodyCountBox.setFocusPainted(false);
 		
-		JCheckBox videoFeedBox = new JCheckBox("Live Video Feed");
+		final JCheckBox videoFeedBox = new JCheckBox("Live Video Feed");
 		videoFeedBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		videoFeedBox.setFocusPainted(false);
 		
@@ -186,17 +248,80 @@ public class SetupPage extends JFrame {
 		
 		leftPanel.add(featuresPanel, BorderLayout.NORTH);
 		leftPanel.add(scrollPane, BorderLayout.CENTER);
-		leftPanel.add(launchButton, BorderLayout.SOUTH);
+		
+		leftPanel.add(buttonPanel, BorderLayout.SOUTH);
+		
+		buttonPanel.add(launchButton, BorderLayout.SOUTH);
+		buttonPanel.add(clearPoints, BorderLayout.NORTH);
 		
 		
-		browser = new Browser();	
-		BrowserView browserView = new BrowserView(browser);
-		browserView.setMinimumSize(new Dimension(10, 60));
+//		browser = new Browser();	
+//		BrowserView browserView = new BrowserView(browser);
+//		browserView.setMinimumSize(new Dimension(10, 60));
 		
+		jXMapKit = new JXMapKit();
+		
+		info = new OSMTileFactoryInfo();
+		tileFactory = new DefaultTileFactory(info);
+		jXMapKit.setTileFactory(tileFactory);
+		
+		tileFactory.setThreadPoolSize(8);
+		
+		GeoPosition UofC = new GeoPosition(51.079948, -114.125534);
+		
+		wp = new DefaultWaypoint(UofC);
+		
+		wps = new HashSet<Waypoint>(Arrays.asList(new DefaultWaypoint()));
+		
+		waypointPainter = new WaypointPainter<Waypoint>();
+		waypointPainter.setWaypoints(wps);
+		waypointPainter.setRenderer(new FancyWaypointRenderer(new String("white")));
+		
+		painters = new ArrayList<Painter<JXMapViewer>>();
+		painters.add(waypointPainter);
+		
+		painter = new CompoundPainter<JXMapViewer>(painters);
+		jXMapKit.getMainMap().setOverlayPainter(painter);
+		
+		jXMapKit.setZoom(3);
+		jXMapKit.getMainMap().setAddressLocation(UofC);
+		jXMapKit.setAddressLocationShown(false);
+		
+		rightPanel.add(jXMapKit);
+		
+		jXMapKit.getMainMap().addMouseListener(new MouseInputAdapter(){
+			public void mouseClicked(MouseEvent e){
+				Point point = e.getPoint();
+				
+				GeoPosition marker = jXMapKit.getMainMap().convertPointToGeoPosition(point);
+				wp = new DefaultWaypoint(marker);
+				wps.add(wp);
+				
+				waypointPainter.setWaypoints(wps);
+				jXMapKit.getMainMap().repaint();
+				
+				DecimalFormat df = new DecimalFormat();
+				df.setMaximumFractionDigits(5);
+				
+				String entry = System.lineSeparator() + 
+						"Waypoint " + waypointNum + 
+						System.lineSeparator() + 
+						"Lon: " + df.format(marker.getLongitude()) + " "  +
+						System.lineSeparator() +
+						"Lat: " + df.format(marker.getLatitude()) + 
+						System.lineSeparator();
+				
+				waypointNum++;
+				
+				currentPoints.append(entry);
+				waypointArea.setText(currentPoints.toString());
+			}
+		});
 		
 		getContentPane();
 		add(leftPanel, BorderLayout.WEST);
-		add(browserView, BorderLayout.CENTER);
+		add(rightPanel, BorderLayout.CENTER);
+//		add(browserView, BorderLayout.CENTER);
 		pack();
 		setSize(1280, 720);
 	}
@@ -206,7 +331,7 @@ public class SetupPage extends JFrame {
 	 * this is only a stub method; chances are waypoint extraction and call to updateUI will be done from mapClickListener instead of here
 	 */
 	public void mapApp(){
-		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
+//		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
 		//test data to see what it looks like with multiple waypoints
 		//TODO remove; add coordinates to waypoints list as Waypoint objects and call updateUI once after every update to the list
 		updateUI();	

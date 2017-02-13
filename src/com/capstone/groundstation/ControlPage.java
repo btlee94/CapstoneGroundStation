@@ -26,8 +26,11 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -35,8 +38,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.awt.event.ActionEvent;
 
-import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.swing.BrowserView;
+//import com.teamdev.jxbrowser.chromium.Browser;
+//import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
 import uk.co.caprica.vlcj.binding.LibVlc;
 import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
@@ -44,6 +47,18 @@ import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 
 import javax.swing.*;
 import java.awt.*;
+
+import org.jxmapviewer.JXMapKit;
+import org.jxmapviewer.JXMapViewer;
+import org.jxmapviewer.OSMTileFactoryInfo;
+import org.jxmapviewer.viewer.DefaultTileFactory;
+import org.jxmapviewer.viewer.DefaultWaypoint;
+import org.jxmapviewer.viewer.GeoPosition;
+import org.jxmapviewer.viewer.TileFactoryInfo;
+import org.jxmapviewer.viewer.Waypoint;
+import org.jxmapviewer.viewer.WaypointPainter;
+import org.jxmapviewer.painter.CompoundPainter;
+import org.jxmapviewer.painter.Painter;
 
 /**
  * This is the 'In-Flight' screen
@@ -53,28 +68,65 @@ import java.awt.*;
  */
 public class ControlPage extends JFrame {
 	private static final long serialVersionUID = 1L;
+	
 	private boolean videoOn = false;
 	private boolean bodyCount = false;
+	
+	
+	//Responsible for displaying VLC player and .sdp stream
 	private EmbeddedMediaPlayerComponent mediaPlayerComponent;
+	
+	
+	//Schedulers for managing threads reading from command line applications, and for SSH connection
 	private ScheduledFuture<?> droneStatsHandler;
+	private ScheduledFuture<?> droneLocHandler;
+	private ScheduledFuture<?> vidAnalyticHandler;
+	
 	private JTextArea droneStats;
 	private JLabel vidAnalytics;
+	
+	//Reads from command line application executed by python scripts
 	private BufferedReader pyConsolInpt;
-	//define path to python.exe and any scripts that need to be run
-	//TODO be aware of path differences between Windows and Linux; Win = \\ Linux = /
+	
+	//Python script execution strings
 	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
 	private static final String pythonExePath = "C:\\Python27\\python.exe ";
-	private static final String videoFeedParamsPath = "droneFootage.mkv";	//TODO change to path to sdp file
+	private static final String videoFeedParamsPath = "sololink.sdp";	//TODO change to path to sdp file
+	
 	//define patterns for parsing vehicleStats.py output
 	//TODO these patterns look for a number and then end of line; likely need to change assuming there are units after the numbers
 	private static final List<Pattern> regexs = Arrays.asList(
 					Pattern.compile("Vehicle state:$"),
-					Pattern.compile("\\sRelative\\sAltitude:\\s\\d*$"),
-					Pattern.compile("\\sVelocity:\\s\\d*$"),
-					Pattern.compile("\\sBattery\\sPercent:\\s\\d*$"),
-					Pattern.compile("\\sGroundspeed:\\s\\d*$"),
-					Pattern.compile("\\sAirspeed:\\s\\d*$"),
-					Pattern.compile("\\sMode:\\s\\d*$"));
+					Pattern.compile("\\sRelative\\sAltitude:\\s.*$"),
+					Pattern.compile("\\sVelocity:\\s.*$"),
+					Pattern.compile("\\sBattery\\sPercent:\\s.*$"),
+					Pattern.compile("\\sGroundspeed:\\s.*$"),
+					Pattern.compile("\\sAirspeed:\\s.*$"),
+					Pattern.compile("\\sMode:\\s.*$"));
+	
+	//Map Variables
+	private JXMapKit mapViewer;
+	private TileFactoryInfo info;
+	private GeoPosition currLoc;
+	private DefaultTileFactory tileFactory;
+	private WaypointPainter<Waypoint> waypointPainter;
+	private List<Painter<JXMapViewer>> painters;
+	private CompoundPainter<JXMapViewer> painter;
+	private Set<Waypoint> waypoints;
+	private DefaultWaypoint wp;
+	
+	//Temp long/lat variables to simulate movement on maps application
+	private double cLong;
+	private double cLat;
+	
+	//Holds the string displaying analytic data (eg., Object Not Detected, or Object Detected)
+	public static String analyticData = "";
+	
+	//Will hold the drone's GPS coordinates fetched by the buffered reader
+	private static double droneLong;
+	private static double droneLat;
+	
+	
 	
 	/**
 	 * Launch the application.
@@ -121,8 +173,8 @@ public class ControlPage extends JFrame {
 		
 		if(videoOn){	//find libVLC
 			boolean found = new NativeDiscovery().discover();
-	        System.out.println(found);
-	        System.out.println(LibVlc.INSTANCE.libvlc_get_version());
+	       // System.out.println(found);
+	       //System.out.println(LibVlc.INSTANCE.libvlc_get_version());
 		}
 		
 		//draw the window components
@@ -137,9 +189,15 @@ public class ControlPage extends JFrame {
 		
 		//initiate thread for reading drone stats and updating the window
 		readDroneStats();	
+	
+		//initiate thread for update drone location on jxmapviewer2 component
+		fetchDroneLoc();
 		
+		if(!videoOn){
+			fetchVidAnalytics();
+		}
 		//initiate video feed if selected
-		if(videoOn)
+		else
 			playVideoFeed();	
 	}
 	
@@ -150,11 +208,14 @@ public class ControlPage extends JFrame {
 	private void createGUI(){
 		JPanel leftPanel = new JPanel(new BorderLayout());
 		JPanel statsPanel = new JPanel();
+		
+		
+		JPanel rightPanel = new JPanel(new BorderLayout());
+		
+		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		
 		statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
 		JPanel vidPanel = new JPanel(new BorderLayout());
-		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-		splitPane.setDividerSize(10);
-		splitPane.setBorder(BorderFactory.createEmptyBorder());
 		
 		droneStats = new JTextArea();
 		droneStats.setEditable(false);
@@ -202,38 +263,79 @@ public class ControlPage extends JFrame {
 		
 		statsPanel.add(attributesLabel);
 		statsPanel.add(scrollPane);
-		if(!videoOn){	//no analytics if video is playing for now
-			statsPanel.add(analyticsLabel);
-			statsPanel.add(vidAnalytics);
-		}
-		
 		
 		leftPanel.add(statsPanel, BorderLayout.NORTH);
 		leftPanel.add(abortButton, BorderLayout.SOUTH);
-		
-	
-		final Browser browser = new Browser();
-		browser.loadURL("https://www.google.ca/maps/");	//Test purposes only; replace with URL for tower app
-		BrowserView browserView = new BrowserView(browser);
-		browserView.setMinimumSize(new Dimension(10, 60));
-		
-		
-		splitPane.setTopComponent(browserView);
+			
+		initializeMap();
 		
 		if(videoOn){
+			splitPane.setDividerSize(10);
+			splitPane.setBorder(BorderFactory.createEmptyBorder());
+			
 			mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
 			mediaPlayerComponent.setMinimumSize(new Dimension(10, 60));
 			vidPanel.add(mediaPlayerComponent);
 			splitPane.setBottomComponent(vidPanel);	
 			splitPane.setResizeWeight(0.5);
+			
+			splitPane.setTopComponent(mapViewer);
+			splitPane.setResizeWeight(0.5);
+		}
+		else{
+			statsPanel.add(analyticsLabel);
+			statsPanel.add(vidAnalytics);
+			splitPane.setTopComponent(rightPanel);
+			rightPanel.add(mapViewer);
 		}
 		
 		
 		getContentPane();
 		add(leftPanel, BorderLayout.WEST);
-		add(splitPane, BorderLayout.CENTER);
+		
+		if(videoOn)
+			add(splitPane, BorderLayout.CENTER);
+		else
+			add(rightPanel, BorderLayout.CENTER);
+		
 		pack();
 		setSize(1280, 720);
+	}
+	
+	
+	private void initializeMap(){
+		
+		mapViewer = new JXMapKit();
+		
+		info = new OSMTileFactoryInfo();
+		tileFactory = new DefaultTileFactory(info);
+		mapViewer.setTileFactory(tileFactory);
+		
+		tileFactory.setThreadPoolSize(8);
+		
+		cLong = 51.079948;
+		cLat = -114.125534;
+		currLoc = new GeoPosition(cLong, cLat);
+		
+		wp = new DefaultWaypoint(currLoc);
+		
+		waypoints = new HashSet<Waypoint>(Arrays.asList(
+				wp
+				));
+		
+		waypointPainter = new WaypointPainter<Waypoint>();
+		waypointPainter.setWaypoints(waypoints);
+		waypointPainter.setRenderer(new FancyWaypointRenderer(new String("solo")));
+		
+		painters = new ArrayList<Painter<JXMapViewer>>();
+		painters.add(waypointPainter);
+		
+		painter = new CompoundPainter<JXMapViewer>(painters);
+		mapViewer.getMainMap().setOverlayPainter(painter);
+		
+		mapViewer.setZoom(3);
+		mapViewer.setAddressLocation(currLoc);
+		
 	}
 	
 	/**
@@ -250,6 +352,56 @@ public class ControlPage extends JFrame {
 		//if thread exists before mission complete, re launch thread after 'reRunInterval' seconds
 		final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 		droneStatsHandler = scheduler.scheduleAtFixedRate(statsUpdater, 3, reRunInterval, TimeUnit.SECONDS);
+	}
+	
+	private void fetchDroneLoc(){
+		int reRunInterval = 2;
+		final Runnable statsUpdater2 = new Runnable() {
+			public void run() { updateMap(); }
+		};
+		
+		final ScheduledExecutorService scheduler2 = Executors.newScheduledThreadPool(1);
+		droneLocHandler = scheduler2.scheduleAtFixedRate(statsUpdater2, 3, reRunInterval, TimeUnit.SECONDS);
+	}
+	
+	private void updateMap(){
+		cLong += 0.0001;
+		cLat += 0.0001;
+		
+		currLoc = new GeoPosition(cLong, cLat);
+		wp = new DefaultWaypoint(currLoc);
+		
+		waypoints.clear();
+		waypoints.add(wp);
+		
+		waypointPainter.setWaypoints(waypoints);
+		
+		mapViewer.setAddressLocation(currLoc);
+		
+	}
+	
+	private void fetchVidAnalytics(){
+		
+		String hostName = "10.1.1.10";
+		String username = "root";
+		String password = "TjSDBkAu";
+		String cmd = "python scripts/opencv/colorDetect.py";
+		String knownHosts = "~/.ssh/known_hosts";
+		
+		
+		final JavaSSH jsch = new JavaSSH(hostName,username,password,cmd,knownHosts);
+		jsch.connect();
+		jsch.createLogFile();
+		final Runnable statsUpdater3 = new Runnable() {
+			public void run() { updateAnalytics(jsch); }
+		};
+		
+		final ScheduledExecutorService scheduler3 = Executors.newScheduledThreadPool(1);
+		vidAnalyticHandler = scheduler3.schedule(statsUpdater3, 1, TimeUnit.SECONDS);
+	}
+	
+	private void updateAnalytics(JavaSSH jsch){
+		jsch.fetchAnalyticData();
 	}
 	
 	/**
@@ -280,7 +432,7 @@ public class ControlPage extends JFrame {
 				 * TODO fetch analytics data and update here
 				 */
 				if(!videoOn)
-					vidAnalytics.setText("Body Count: 4");	//testing purposes only
+					vidAnalytics.setText(analyticData);	//testing purposes only
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -293,13 +445,13 @@ public class ControlPage extends JFrame {
 	 * @throws IOException
 	 */
 	private void executeLaunchScripts() throws IOException{
-		String[] cmd = new String[2];
-		cmd[0] = pythonExePath;	//path to python.exe
-		cmd[1] = pythonScriptPath_droneStats;	//path to python script
+		//String[] cmd = new String[2];
+		//cmd[0] = pythonExePath;	//path to python.exe
+		//cmd[1] = pythonScriptPath_droneStats;	//path to python script
 		
 		// create runtime to execute python scripts
 		Runtime rt = Runtime.getRuntime();
-		Process pr = rt.exec(cmd);
+		Process pr = rt.exec("python scripts/vehicleStats.py");
 		 
 		// initialize input stream - this will be used to read output from python scripts
 		pyConsolInpt = new BufferedReader(new InputStreamReader(pr.getInputStream()));
