@@ -9,3 +9,6 @@ https://github.com/caprica/vlcj
 
 DroneKit Python
 https://github.com/dronekit/dronekit-python
+
+Common Loggings jar
+https://commons.apache.org/proper/commons-logging/download_logging.cgi

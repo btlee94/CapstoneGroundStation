@@ -26,11 +26,8 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -38,10 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.awt.event.ActionEvent;
 
-//import com.teamdev.jxbrowser.chromium.Browser;
-//import com.teamdev.jxbrowser.chromium.swing.BrowserView;
-
-import uk.co.caprica.vlcj.binding.LibVlc;
 import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 
@@ -49,16 +42,10 @@ import javax.swing.*;
 import java.awt.*;
 
 import org.jxmapviewer.JXMapKit;
-import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.OSMTileFactoryInfo;
 import org.jxmapviewer.viewer.DefaultTileFactory;
-import org.jxmapviewer.viewer.DefaultWaypoint;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactoryInfo;
-import org.jxmapviewer.viewer.Waypoint;
-import org.jxmapviewer.viewer.WaypointPainter;
-import org.jxmapviewer.painter.CompoundPainter;
-import org.jxmapviewer.painter.Painter;
 
 /**
  * This is the 'In-Flight' screen
@@ -97,23 +84,22 @@ public class ControlPage extends JFrame {
 	//TODO these patterns look for a number and then end of line; likely need to change assuming there are units after the numbers
 	private static final List<Pattern> regexs = Arrays.asList(
 					Pattern.compile("Vehicle state:$"),
-					Pattern.compile("\\sRelative\\sAltitude:\\s.*$"),
-					Pattern.compile("\\sVelocity:\\s.*$"),
-					Pattern.compile("\\sBattery\\sPercent:\\s.*$"),
-					Pattern.compile("\\sGroundspeed:\\s.*$"),
-					Pattern.compile("\\sAirspeed:\\s.*$"),
-					Pattern.compile("\\sMode:\\s.*$"));
+					Pattern.compile("Relative Altitude:\\s.*$"),
+					Pattern.compile("Velocity:\\s.*$"),
+					Pattern.compile("Battery\\sPercent:\\s.*$"),
+					Pattern.compile("Groundspeed:\\s.*$"),
+					Pattern.compile("Airspeed:\\s.*$"),
+					Pattern.compile("Mode:\\s.*$"),
+					Pattern.compile("Longitude:\\s.*$"),
+					Pattern.compile("Latitude:\\s.*$"));
+	
+	private SoloMarkerManager smm;
 	
 	//Map Variables
 	private JXMapKit mapViewer;
 	private TileFactoryInfo info;
 	private GeoPosition currLoc;
 	private DefaultTileFactory tileFactory;
-	private WaypointPainter<Waypoint> waypointPainter;
-	private List<Painter<JXMapViewer>> painters;
-	private CompoundPainter<JXMapViewer> painter;
-	private Set<Waypoint> waypoints;
-	private DefaultWaypoint wp;
 	
 	//Temp long/lat variables to simulate movement on maps application
 	private double cLong;
@@ -125,6 +111,8 @@ public class ControlPage extends JFrame {
 	//Will hold the drone's GPS coordinates fetched by the buffered reader
 	private static double droneLong;
 	private static double droneLat;
+	
+	private JavaSSH jsch;
 	
 	
 	
@@ -173,8 +161,6 @@ public class ControlPage extends JFrame {
 		
 		if(videoOn){	//find libVLC
 			boolean found = new NativeDiscovery().discover();
-	       // System.out.println(found);
-	       //System.out.println(LibVlc.INSTANCE.libvlc_get_version());
 		}
 		
 		//draw the window components
@@ -208,8 +194,6 @@ public class ControlPage extends JFrame {
 	private void createGUI(){
 		JPanel leftPanel = new JPanel(new BorderLayout());
 		JPanel statsPanel = new JPanel();
-		
-		
 		JPanel rightPanel = new JPanel(new BorderLayout());
 		
 		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -221,12 +205,12 @@ public class ControlPage extends JFrame {
 		droneStats.setEditable(false);
 		droneStats.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		droneStats.setBackground(null);
-		droneStats.setRows(8);
+		droneStats.setRows(11);
 		JScrollPane scrollPane  = new JScrollPane(droneStats);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
 		
 		JButton abortButton = new JButton("Abort");
-		abortButton.setPreferredSize(new Dimension(200, 60));
+		abortButton.setPreferredSize(new Dimension(220, 60));
 		abortButton.setFont(new Font("Tahoma", Font.PLAIN, 30));
 		abortButton.setContentAreaFilled(false);
 		abortButton.setBackground(new Color(213, 0, 0));
@@ -237,8 +221,21 @@ public class ControlPage extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(videoOn)
 					mediaPlayerComponent.release();
+				if(bodyCount){
+					vidAnalyticHandler.cancel(true);
+					
+					if(jsch!=null)
+					jsch.close();
+				}
 				droneStatsHandler.cancel(true);
-				//executeAbortScripts();
+				droneLocHandler.cancel(true);
+				
+				try {
+					executeAbortScripts();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				
 				//close control page and return to setup page
 				dispose();
@@ -307,6 +304,8 @@ public class ControlPage extends JFrame {
 		
 		mapViewer = new JXMapKit();
 		
+		smm = new SoloMarkerManager();
+		
 		info = new OSMTileFactoryInfo();
 		tileFactory = new DefaultTileFactory(info);
 		mapViewer.setTileFactory(tileFactory);
@@ -317,21 +316,9 @@ public class ControlPage extends JFrame {
 		cLat = -114.125534;
 		currLoc = new GeoPosition(cLong, cLat);
 		
-		wp = new DefaultWaypoint(currLoc);
+		smm.init(currLoc);
 		
-		waypoints = new HashSet<Waypoint>(Arrays.asList(
-				wp
-				));
-		
-		waypointPainter = new WaypointPainter<Waypoint>();
-		waypointPainter.setWaypoints(waypoints);
-		waypointPainter.setRenderer(new FancyWaypointRenderer(new String("solo")));
-		
-		painters = new ArrayList<Painter<JXMapViewer>>();
-		painters.add(waypointPainter);
-		
-		painter = new CompoundPainter<JXMapViewer>(painters);
-		mapViewer.getMainMap().setOverlayPainter(painter);
+		mapViewer.getMainMap().setOverlayPainter(smm.getPainter());
 		
 		mapViewer.setZoom(3);
 		mapViewer.setAddressLocation(currLoc);
@@ -355,7 +342,7 @@ public class ControlPage extends JFrame {
 	}
 	
 	private void fetchDroneLoc(){
-		int reRunInterval = 2;
+		int reRunInterval = 4;
 		final Runnable statsUpdater2 = new Runnable() {
 			public void run() { updateMap(); }
 		};
@@ -368,13 +355,13 @@ public class ControlPage extends JFrame {
 		cLong += 0.0001;
 		cLat += 0.0001;
 		
-		currLoc = new GeoPosition(cLong, cLat);
-		wp = new DefaultWaypoint(currLoc);
+		//if a GPS lock exists, use the drone's GPS coordinates
+		if(droneLong != 0 && droneLat != 0)
+			currLoc = new GeoPosition(droneLong, droneLat);
+		else
+			currLoc = new GeoPosition(cLong, cLat);
 		
-		waypoints.clear();
-		waypoints.add(wp);
-		
-		waypointPainter.setWaypoints(waypoints);
+		smm.update(currLoc);
 		
 		mapViewer.setAddressLocation(currLoc);
 		
@@ -389,18 +376,23 @@ public class ControlPage extends JFrame {
 		String knownHosts = "~/.ssh/known_hosts";
 		
 		
-		final JavaSSH jsch = new JavaSSH(hostName,username,password,cmd,knownHosts);
+		jsch = new JavaSSH(hostName,username,password,cmd,knownHosts);
 		jsch.connect();
-		jsch.createLogFile();
+		//jsch.createLogFile();
 		final Runnable statsUpdater3 = new Runnable() {
-			public void run() { updateAnalytics(jsch); }
+			public void run() { try {
+				updateAnalytics(jsch);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} }
 		};
 		
 		final ScheduledExecutorService scheduler3 = Executors.newScheduledThreadPool(1);
 		vidAnalyticHandler = scheduler3.schedule(statsUpdater3, 1, TimeUnit.SECONDS);
 	}
 	
-	private void updateAnalytics(JavaSSH jsch){
+	private void updateAnalytics(JavaSSH jsch) throws IOException{
 		jsch.fetchAnalyticData();
 	}
 	
@@ -416,17 +408,34 @@ public class ControlPage extends JFrame {
 		String line = "";
 		try {
 			while((line = pyConsolInpt.readLine()) != null) {
-				for(Pattern regex : regexs){
+				/*for(Pattern regex : regexs){
 					if(regex.matcher(line).matches()){
 						attributes.append(line);
 						attributes.append(System.lineSeparator());
 						droneStats.setText(attributes.toString());
 						
+						if(line.contains("Longitude")){
+							droneLong = Double.parseDouble(line.substring(11));
+						}
+						if(line.contains("Latitude")){
+							droneLat = Double.parseDouble(line.substring(10));							
+						}
 						//reset StringBuilder when we know output will start looping
 						if(line.contains("Mode: "))
 							attributes.setLength(0);
 					}
 				}
+				*/
+				attributes.append(line);
+				attributes.append(System.lineSeparator());
+				droneStats.setText(attributes.toString());
+				
+				if(line.contains("Longitude"))
+					droneLong = Double.parseDouble(line.substring(11));
+				if(line.contains("Latitude"))
+					droneLat = Double.parseDouble(line.substring(10));
+				if(line.contains("Mode"))
+					attributes.setLength(0);
 				
 				/**
 				 * TODO fetch analytics data and update here
@@ -467,15 +476,16 @@ public class ControlPage extends JFrame {
 		cmd[0] = pythonExePath;
 		cmd[1] = "INSERT PATH TO SCRIPTS";
 		
+		
 		// create runtime to execute python scripts
-		Runtime rt = Runtime.getRuntime();
-		Process pr = rt.exec(cmd);
+		//Runtime rt = Runtime.getRuntime();
+		//Process pr = rt.exec(cmd);
 	}
 	
 	/**
 	 * Play video feed from drone
 	 */
 	private void playVideoFeed(){
-		mediaPlayerComponent.getMediaPlayer().playMedia(videoFeedParamsPath);	//testing purposes only; replace with path to .sdp file
+		mediaPlayerComponent.getMediaPlayer().playMedia(videoFeedParamsPath);
 	}
 }

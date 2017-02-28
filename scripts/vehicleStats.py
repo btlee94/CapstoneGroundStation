@@ -5,7 +5,7 @@ import time
 # Connect to UDP endpoint (and wait for default attributes to accumulate)
 target = sys.argv[1] if len(sys.argv) >= 2 else '127.0.0.1:14555'
 print 'Connecting to ' + target + '...'
-vehicle = connect(target, wait_ready=True)
+vehicle = connect(target, wait_ready=False)
 
 #vehicle.parameters['ARMING_CHECK']=-9
 
@@ -22,13 +22,15 @@ cmds.wait_ready()
 while True:
 
 # Get all vehicle attributes (state)
-	print "Vehicle state: Test"
-	print " Relative Altitude: %s" % vehicle.location.global_relative_frame.alt
-	print " Velocity: %s" % vehicle.velocity
-	print " Battery Percent: %s" % vehicle.battery.level
-	print " Groundspeed: %s" % vehicle.groundspeed
-	print " Airspeed: %s" % vehicle.airspeed
-	print " Mode: %s" % vehicle.mode.name
+	print "Vehicle state: "
+	print "Relative Altitude: %s" % vehicle.location.global_relative_frame.alt
+	print "Velocity: %s" % vehicle.velocity
+	print "Battery Percent: %s" % vehicle.battery.level
+	print "Groundspeed: %s" % vehicle.groundspeed
+	print "Airspeed: %s" % vehicle.airspeed
+	print "Longitude: %s" % vehicle.location.global_frame.lon
+	print "Latitude: %s" % vehicle.location.global_frame.lat
+	print "Mode: %s" % vehicle.mode.name
 	time.sleep(2)
 	sys.stdout.flush()
 

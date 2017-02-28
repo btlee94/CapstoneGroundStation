@@ -1,7 +1,5 @@
 package com.capstone.groundstation;
 
-import java.awt.Color;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -11,32 +9,31 @@ import javax.imageio.ImageIO;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jxmapviewer.JXMapViewer;
+import org.jxmapviewer.viewer.Waypoint;
 import org.jxmapviewer.viewer.WaypointRenderer;
 
-public class FancyWaypointRenderer implements WaypointRenderer<MyWaypoint> {
+public class SoloWayPointRenderer implements WaypointRenderer<Waypoint> {
 private static final Log log = LogFactory.getLog(FancyWaypointRenderer.class);
 
 
 private BufferedImage img = null;
 
 
-public FancyWaypointRenderer()
+public SoloWayPointRenderer()
 {
 	try
 	{
-		img = ImageIO.read(FancyWaypointRenderer.class.getResource("resources/waypoint_white.png"));
+		img = ImageIO.read(FancyWaypointRenderer.class.getResource("resources/solo.png"));
 	}
 	catch (Exception ex)
 	{
-		log.warn("couldn't read waypoint_white.png", ex);
+		log.warn("couldn't read standard_waypoint.png", ex);
 	}
 }
 
-public void paintWaypoint(Graphics2D g, JXMapViewer map, MyWaypoint w)
+public void paintWaypoint(Graphics2D g, JXMapViewer map, Waypoint w)
 {
-	String label = w.getLabel();
-
-	if (img == null || label == "")
+	if (img == null)
 		return;
 
 	Point2D point = map.getTileFactory().geoToPixel(w.getPosition(), map.getZoom());
@@ -45,14 +42,5 @@ public void paintWaypoint(Graphics2D g, JXMapViewer map, MyWaypoint w)
 	int y = (int)point.getY() -img.getHeight();
 	
 	g.drawImage(img, x, y, null);
-	
-	g.setColor(Color.BLACK);
-	FontMetrics metrics = g.getFontMetrics();
-	int tw = metrics.stringWidth(label);
-	int th = metrics.getHeight();
-	
-	g.drawString(label, x+img.getWidth()/2-tw/2, y+img.getHeight()/2-th/4);
-
 }
-
 }

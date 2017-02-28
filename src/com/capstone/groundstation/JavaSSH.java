@@ -14,11 +14,8 @@ public class JavaSSH {
 	private String command;
 	private String knownHosts;
 	
-	private String logPath;
 	private String fileName;
-	
-	private BufferedWriter bw;
-	private FileWriter fw;
+
 	private BufferedReader in;
 	
 	private ChannelExec channel;
@@ -37,6 +34,10 @@ public class JavaSSH {
 		command = cmd;
 		knownHosts = hostsFP;
 		
+	}
+	
+	public void close(){
+		channel.disconnect();
 	}
 	
 	public void connect(){
@@ -88,40 +89,18 @@ public class JavaSSH {
 		}
 	}
 	
-	public void fetchAnalyticData(){
+	public void fetchAnalyticData() {
 		// Parse data being sent back
 		try{
 		while ((dataReceived = in.readLine()) != null) {
-			try {
-				fw = new FileWriter(file.getAbsoluteFile(), true); // True - append to file
-				bw = new BufferedWriter(fw);
-
 				ControlPage.analyticData = dataReceived;
-				
-				bw.write(dataReceived);
-				bw.write("\n");
 
-
-
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				// Close everything
-				try {
-					if (bw != null)
-						bw.close();
-
-					if (fw != null)
-						fw.close();
-				} catch (IOException ex) {
-					ex.printStackTrace();
-				}
-			}
-			}
 		}
-		catch (Exception ex){
-			ex.printStackTrace();
+		}
+		catch(Exception e){
+			System.out.print("JScH Closed");
+			close();
+			
 		}
 		}
 

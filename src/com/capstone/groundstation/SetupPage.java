@@ -1,23 +1,3 @@
-/*
- * This file is part of CapstoneGroundStation.
- *
- * CapstoneGroundStation is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * CapstoneGroundStation is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with CapstoneGroundStation.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Copyright 2016-2017 Brandon Lee, Veronica Eaton
- * 
- * CapstoneGroundStation makes use of JxBrowser (https://www.teamdev.com/jxbrowser)
- */
 package com.capstone.groundstation;
 
 import java.awt.EventQueue;
@@ -25,22 +5,15 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JToggleButton;
-import javax.swing.SwingConstants;
 import javax.swing.UIManager;
-//import com.teamdev.jxbrowser.chromium.Browser;
-//import com.teamdev.jxbrowser.chromium.internal.ipc.LatchUtil;
-//import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Point;
-import java.awt.Rectangle;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -51,26 +24,13 @@ import javax.swing.event.MouseInputAdapter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
-import java.awt.geom.Point2D;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.jxmapviewer.JXMapKit;
-import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.OSMTileFactoryInfo;
 import org.jxmapviewer.viewer.DefaultTileFactory;
-import org.jxmapviewer.viewer.DefaultWaypoint;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactoryInfo;
-import org.jxmapviewer.viewer.Waypoint;
-import org.jxmapviewer.viewer.WaypointPainter;
-import org.jxmapviewer.painter.CompoundPainter;
-import org.jxmapviewer.painter.Painter;
 /**
  * 
  * @authors Veronica Eaton, Brandon Lee
@@ -78,24 +38,19 @@ import org.jxmapviewer.painter.Painter;
  */
 public class SetupPage extends JFrame {
 	private static final long serialVersionUID = 1L;
-//	private Browser browser;
 	private JTextArea waypointArea;
 	private boolean bodyCount = false;
 	private boolean vidOn = false;
 	private int waypointNum = 1;
 	private StringBuilder currentPoints = new StringBuilder();
-	//private ArrayList<Waypoint> waypoints = new ArrayList<>();
 	
+	//Map variables
 	private JXMapKit jXMapKit;
-	
 	private TileFactoryInfo info;
 	private DefaultTileFactory tileFactory;
-
-	private WaypointPainter<Waypoint> waypointPainter;
-	private List<Painter<JXMapViewer>> painters;
-	private CompoundPainter<JXMapViewer> painter;
-	private Set<Waypoint> wps;
-	private DefaultWaypoint wp;
+	
+	//Manages Waypoint Markers
+	private WayPointManager wpm;
 	
 
 	/**
@@ -129,9 +84,6 @@ public class SetupPage extends JFrame {
 		
 		//draw the window components
 		createGUI();
-		
-		//initiate embedded maps application
-		//mapApp();
 	}
 	
 	/**
@@ -183,8 +135,7 @@ public class SetupPage extends JFrame {
 			
 			public void actionPerformed(ActionEvent e){
 				
-				wps.clear();
-				waypointPainter.setWaypoints(wps);
+				wpm.clearPoints();
 				
 				waypointArea.setText("");
 				currentPoints.setLength(0);
@@ -199,7 +150,7 @@ public class SetupPage extends JFrame {
 		label.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		label.setForeground(new Color(0, 153, 255));
 
-		final JCheckBox bodyCountBox = new JCheckBox("Body Count Analytics");
+		final JCheckBox bodyCountBox = new JCheckBox("Object Detection");
 		bodyCountBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		bodyCountBox.setFocusPainted(false);
 		
@@ -255,10 +206,6 @@ public class SetupPage extends JFrame {
 		buttonPanel.add(clearPoints, BorderLayout.NORTH);
 		
 		
-//		browser = new Browser();	
-//		BrowserView browserView = new BrowserView(browser);
-//		browserView.setMinimumSize(new Dimension(10, 60));
-		
 		jXMapKit = new JXMapKit();
 		
 		info = new OSMTileFactoryInfo();
@@ -269,19 +216,10 @@ public class SetupPage extends JFrame {
 		
 		GeoPosition UofC = new GeoPosition(51.079948, -114.125534);
 		
-		wp = new DefaultWaypoint(UofC);
+		wpm = new WayPointManager();
+		wpm.initPaint(UofC);
 		
-		wps = new HashSet<Waypoint>(Arrays.asList(new DefaultWaypoint()));
-		
-		waypointPainter = new WaypointPainter<Waypoint>();
-		waypointPainter.setWaypoints(wps);
-		waypointPainter.setRenderer(new FancyWaypointRenderer(new String("white")));
-		
-		painters = new ArrayList<Painter<JXMapViewer>>();
-		painters.add(waypointPainter);
-		
-		painter = new CompoundPainter<JXMapViewer>(painters);
-		jXMapKit.getMainMap().setOverlayPainter(painter);
+		jXMapKit.getMainMap().setOverlayPainter(wpm.getPainter());
 		
 		jXMapKit.setZoom(3);
 		jXMapKit.getMainMap().setAddressLocation(UofC);
@@ -294,10 +232,9 @@ public class SetupPage extends JFrame {
 				Point point = e.getPoint();
 				
 				GeoPosition marker = jXMapKit.getMainMap().convertPointToGeoPosition(point);
-				wp = new DefaultWaypoint(marker);
-				wps.add(wp);
+	
+				wpm.addPoint(marker);
 				
-				waypointPainter.setWaypoints(wps);
 				jXMapKit.getMainMap().repaint();
 				
 				DecimalFormat df = new DecimalFormat();
@@ -315,50 +252,24 @@ public class SetupPage extends JFrame {
 				
 				currentPoints.append(entry);
 				waypointArea.setText(currentPoints.toString());
+				
 			}
 		});
 		
 		getContentPane();
 		add(leftPanel, BorderLayout.WEST);
 		add(rightPanel, BorderLayout.CENTER);
-//		add(browserView, BorderLayout.CENTER);
 		pack();
 		setSize(1280, 720);
 	}
 	
-	/**
-	 * TODO embed maps application
-	 * this is only a stub method; chances are waypoint extraction and call to updateUI will be done from mapClickListener instead of here
-	 */
-	public void mapApp(){
-//		browser.loadURL("https://www.google.ca/maps/"); //testing purposes only
-		//test data to see what it looks like with multiple waypoints
-		//TODO remove; add coordinates to waypoints list as Waypoint objects and call updateUI once after every update to the list
-		updateUI();	
-		updateUI();
-		updateUI();
-		updateUI();
-		updateUI();
-	}
 	
 	/**
 	 * update screen with waypoint coordinates extracted from map
+	 * might make use of this later
 	 */
 	public void updateUI(){
-		/*******
-		 * TODO this is for UI testing only; remove and use below code instead; delete waypointNum variable
-		 */
-		String entry = System.lineSeparator() + 
-				"Waypoint " + waypointNum + 
-				System.lineSeparator() + 
-				"Lon: " + 51.077269 + " " +
-				"Lat: " + -114.129303 + 
-				System.lineSeparator();
-		
-		waypointNum++;
-		
 		/********
-		 * TODO use this instead of above code
 		 * might need to be modified as ive written this based on jxmapviewer documentation alone
 		 *
 		for(int i = 0; i < waypoints.size(); i++){
@@ -370,7 +281,5 @@ public class SetupPage extends JFrame {
 					System.lineSeparator();
 		}
 		*/
-		currentPoints.append(entry);
-		waypointArea.setText(currentPoints.toString());
 	}
 }
