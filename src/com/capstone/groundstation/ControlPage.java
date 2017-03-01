@@ -410,6 +410,12 @@ public class ControlPage extends JFrame {
 		}
 		droneStatsHandler.cancel(true);
 		droneLocHandler.cancel(true);
+		try {
+			pyConsolInpt.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private void buildFlightParamString(String alt, String rad, List<GeoPosition> waypoints){
