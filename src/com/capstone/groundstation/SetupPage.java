@@ -1,12 +1,14 @@
 package com.capstone.groundstation;
 
 import java.awt.EventQueue;
+import java.awt.FlowLayout;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.UIManager;
 
 import java.awt.BorderLayout;
@@ -25,24 +27,29 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
+import java.util.List;
 
 import org.jxmapviewer.JXMapKit;
 import org.jxmapviewer.OSMTileFactoryInfo;
 import org.jxmapviewer.viewer.DefaultTileFactory;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactoryInfo;
+
 /**
- * 
- * @authors Veronica Eaton, Brandon Lee
- *
+ * This is the pre-flight drone setup page
  */
 public class SetupPage extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private JTextArea waypointArea;
-	private boolean bodyCount = false;
-	private boolean vidOn = false;
+	private JTextField radiusField;
+	private JTextField altitudeField;
+	private boolean objectDetect = false;
+	private boolean videoOn = false;
 	private int waypointNum = 1;
 	private StringBuilder currentPoints = new StringBuilder();
+	private String altitude;
+	private String radius;
+	private List<GeoPosition> waypoints;
 	
 	//Map variables
 	private JXMapKit jXMapKit;
@@ -92,14 +99,12 @@ public class SetupPage extends JFrame {
 	private void createGUI(){
 		JPanel leftPanel = new JPanel(new BorderLayout());
 		JPanel featuresPanel = new JPanel();
+		featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
 		
 		JPanel buttonPanel = new JPanel(new BorderLayout());
-		
 		buttonPanel.setPreferredSize(new Dimension(200,120));
 		
-		JPanel rightPanel = new JPanel(new BorderLayout());
-		
-		featuresPanel.setLayout(new BoxLayout(featuresPanel, BoxLayout.Y_AXIS));
+		JPanel mapPanel = new JPanel(new BorderLayout());
 		
 		JButton launchButton = new JButton("Launch Drone");
 		launchButton.setPreferredSize(new Dimension(200, 60));
@@ -112,13 +117,19 @@ public class SetupPage extends JFrame {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				//don't do anything unless one of the check boxes has been selected
-				if(!vidOn && !bodyCount)
+				if(!videoOn && !objectDetect)
 					return;
+				//don't do anything if user hasn't specified an altitude and a radius
+				if(altitudeField.getText().equals("") || radiusField.getText().equals(""))
+					return;
+				
+				//get parameters needed for flight script
+				getFlightParams();
 				
 				//close window and open control page
 				dispose();
 				
-				ControlPage controlPage = new ControlPage(vidOn, bodyCount);
+				ControlPage controlPage = new ControlPage(videoOn, objectDetect, altitude, radius, waypoints);
 				controlPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 				controlPage.setVisible(true);
 			}
@@ -146,9 +157,9 @@ public class SetupPage extends JFrame {
 		
 		
 		
-		JLabel label = new JLabel(" Drone Features");
-		label.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		label.setForeground(new Color(0, 153, 255));
+		JLabel featuresLabel = new JLabel("Drone Features");
+		featuresLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
+		featuresLabel.setForeground(new Color(0, 153, 255));
 
 		final JCheckBox bodyCountBox = new JCheckBox("Object Detection");
 		bodyCountBox.setFont(new Font("Tahoma", Font.PLAIN, 15));
@@ -164,10 +175,10 @@ public class SetupPage extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(videoFeedBox.isSelected()){
 					videoFeedBox.setSelected(false);
-					vidOn = false;
+					videoOn = false;
 				}
 				
-				bodyCount = true;
+				objectDetect = true;
 			}
 		});
 		
@@ -177,33 +188,51 @@ public class SetupPage extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				if(bodyCountBox.isSelected()){
 					bodyCountBox.setSelected(false);
-					bodyCount = false;
+					objectDetect = false;
 				}
 				
-				vidOn = true;
+				videoOn = true;
 			}
 		});
+		
+		
+		JLabel altitudeLabel = new JLabel("Set Relative Altitude");
+		altitudeLabel.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		altitudeField = new JTextField();
+		altitudeField.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		//altitude.setBorder(BorderFactory.createEmptyBorder());
+		
+		JLabel radiusLabel = new JLabel("Set Radius");
+		radiusLabel.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		radiusField = new JTextField();
+		radiusField.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		//radius.setBorder(BorderFactory.createEmptyBorder());
 		
 		
 		waypointArea = new JTextArea();
 		waypointArea.setEditable(false);
 		waypointArea.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		waypointArea.setBackground(null);
+		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setViewportView(waypointArea);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
-
-		featuresPanel.add(label);
+		scrollPane.setViewportView(waypointArea);
+		
+		
+		featuresPanel.add(featuresLabel);
 		featuresPanel.add(bodyCountBox);
 		featuresPanel.add(videoFeedBox);
+		featuresPanel.add(altitudeLabel);
+		featuresPanel.add(altitudeField);
+		featuresPanel.add(radiusLabel);
+		featuresPanel.add(radiusField);
+
+		buttonPanel.add(launchButton, BorderLayout.SOUTH);
+		buttonPanel.add(clearPoints, BorderLayout.NORTH);
 		
 		leftPanel.add(featuresPanel, BorderLayout.NORTH);
 		leftPanel.add(scrollPane, BorderLayout.CENTER);
-		
 		leftPanel.add(buttonPanel, BorderLayout.SOUTH);
-		
-		buttonPanel.add(launchButton, BorderLayout.SOUTH);
-		buttonPanel.add(clearPoints, BorderLayout.NORTH);
 		
 		
 		jXMapKit = new JXMapKit();
@@ -225,7 +254,7 @@ public class SetupPage extends JFrame {
 		jXMapKit.getMainMap().setAddressLocation(UofC);
 		jXMapKit.setAddressLocationShown(false);
 		
-		rightPanel.add(jXMapKit);
+		mapPanel.add(jXMapKit);
 		
 		jXMapKit.getMainMap().addMouseListener(new MouseInputAdapter(){
 			public void mouseClicked(MouseEvent e){
@@ -258,28 +287,14 @@ public class SetupPage extends JFrame {
 		
 		getContentPane();
 		add(leftPanel, BorderLayout.WEST);
-		add(rightPanel, BorderLayout.CENTER);
+		add(mapPanel, BorderLayout.CENTER);
 		pack();
 		setSize(1280, 720);
 	}
 	
-	
-	/**
-	 * update screen with waypoint coordinates extracted from map
-	 * might make use of this later
-	 */
-	public void updateUI(){
-		/********
-		 * might need to be modified as ive written this based on jxmapviewer documentation alone
-		 *
-		for(int i = 0; i < waypoints.size(); i++){
-			String entry = System.lineSeparator() + 
-					"Waypoint " + i + 
-					System.lineSeparator() + 
-					"Lon: " + waypoints.get(i).getPosition().getLatitude() + " " +
-					"Lat: " + waypoints.get(i).getPosition().getLongitude() + 
-					System.lineSeparator();
-		}
-		*/
+	public void getFlightParams() {
+		waypoints = wpm.getWaypoints();
+		altitude = altitudeField.getText();
+		radius = radiusField.getText();
 	}
 }

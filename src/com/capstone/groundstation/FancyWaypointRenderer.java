@@ -24,7 +24,7 @@ public FancyWaypointRenderer()
 {
 	try
 	{
-		img = ImageIO.read(FancyWaypointRenderer.class.getResource("resources/waypoint_white.png"));
+		img = ImageIO.read(FancyWaypointRenderer.class.getResource("/waypoint_white.png"));
 	}
 	catch (Exception ex)
 	{

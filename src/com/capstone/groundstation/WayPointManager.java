@@ -14,7 +14,7 @@ import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.WaypointPainter;
 
 public class WayPointManager {
-	
+
 	private Set<MyWaypoint> wps;
 	private List<GeoPosition> track;
 	private WaypointPainter<MyWaypoint> waypointPainter;
@@ -22,61 +22,64 @@ public class WayPointManager {
 	private MyWaypoint wp;
 	private List<Painter<JXMapViewer>> painters;
 	private CompoundPainter<JXMapViewer> painter;
-	
+
 	private int numPoints = 1;
-	
-	
 
-public WayPointManager(){
-	
-}
 
-public void clearPoints(){
-	wps.clear();
-	waypointPainter.setWaypoints(wps);
-	track.clear();
-	
-	numPoints = 1;
-}
 
-public void initPaint(GeoPosition loc){
+	public WayPointManager(){
 
-	track = new ArrayList<GeoPosition>();
-	
-	wp = new MyWaypoint("blank", Color.BLUE, loc);
+	}
 
-	wps = new HashSet<MyWaypoint>(Arrays.asList(new MyWaypoint("", Color.WHITE, loc)));
-	
-	waypointPainter = new WaypointPainter<MyWaypoint>();
-	waypointPainter.setWaypoints(wps);
-	waypointPainter.setRenderer(new FancyWaypointRenderer());
-	
-	painters = new ArrayList<Painter<JXMapViewer>>();
-	routePainter = new RoutePainter(track);
-	
-	painters.add(routePainter);
+	public void clearPoints(){
+		wps.clear();
+		waypointPainter.setWaypoints(wps);
+		track.clear();
 
-	
-	painters.add(waypointPainter);
-	
-	painter = new CompoundPainter<JXMapViewer>(painters);
-}
+		numPoints = 1;
+	}
 
-public void addPoint(GeoPosition marker){
+	public void initPaint(GeoPosition loc){
 
-	wp = new MyWaypoint(Integer.toString(numPoints), Color.BLUE, marker); //Color not currently implemented
-	wps.add(wp);
-	track.add(marker);
-	waypointPainter.setWaypoints(wps);
-	
-	numPoints++;
-}
-	
+		track = new ArrayList<GeoPosition>();
 
-public CompoundPainter<JXMapViewer> getPainter(){
-	return painter;
-}
-	
-	
+		wp = new MyWaypoint("blank", Color.BLUE, loc);
+
+		wps = new HashSet<MyWaypoint>(Arrays.asList(new MyWaypoint("", Color.WHITE, loc)));
+
+		waypointPainter = new WaypointPainter<MyWaypoint>();
+		waypointPainter.setWaypoints(wps);
+		waypointPainter.setRenderer(new FancyWaypointRenderer());
+
+		painters = new ArrayList<Painter<JXMapViewer>>();
+		routePainter = new RoutePainter(track);
+
+		painters.add(routePainter);
+
+
+		painters.add(waypointPainter);
+
+		painter = new CompoundPainter<JXMapViewer>(painters);
+	}
+
+	public void addPoint(GeoPosition marker){
+
+		wp = new MyWaypoint(Integer.toString(numPoints), Color.BLUE, marker); //Color not currently implemented
+		wps.add(wp);
+		track.add(marker);
+		waypointPainter.setWaypoints(wps);
+
+		numPoints++;
+	}
+
+
+	public CompoundPainter<JXMapViewer> getPainter(){
+		return painter;
+	}
+
+	public List<GeoPosition> getWaypoints(){
+		return track;
+	}
+
 
 }

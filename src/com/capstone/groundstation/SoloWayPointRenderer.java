@@ -13,34 +13,34 @@ import org.jxmapviewer.viewer.Waypoint;
 import org.jxmapviewer.viewer.WaypointRenderer;
 
 public class SoloWayPointRenderer implements WaypointRenderer<Waypoint> {
-private static final Log log = LogFactory.getLog(FancyWaypointRenderer.class);
+	private static final Log log = LogFactory.getLog(FancyWaypointRenderer.class);
 
 
-private BufferedImage img = null;
+	private BufferedImage img = null;
 
 
-public SoloWayPointRenderer()
-{
-	try
+	public SoloWayPointRenderer()
 	{
-		img = ImageIO.read(FancyWaypointRenderer.class.getResource("resources/solo.png"));
+		try
+		{
+			img = ImageIO.read(FancyWaypointRenderer.class.getResource("/solo.png"));
+		}
+		catch (Exception ex)
+		{
+			log.warn("couldn't read standard_waypoint.png", ex);
+		}
 	}
-	catch (Exception ex)
+
+	public void paintWaypoint(Graphics2D g, JXMapViewer map, Waypoint w)
 	{
-		log.warn("couldn't read standard_waypoint.png", ex);
+		if (img == null)
+			return;
+
+		Point2D point = map.getTileFactory().geoToPixel(w.getPosition(), map.getZoom());
+
+		int x = (int)point.getX() -img.getWidth() / 2;
+		int y = (int)point.getY() -img.getHeight();
+
+		g.drawImage(img, x, y, null);
 	}
-}
-
-public void paintWaypoint(Graphics2D g, JXMapViewer map, Waypoint w)
-{
-	if (img == null)
-		return;
-
-	Point2D point = map.getTileFactory().geoToPixel(w.getPosition(), map.getZoom());
-	
-	int x = (int)point.getX() -img.getWidth() / 2;
-	int y = (int)point.getY() -img.getHeight();
-	
-	g.drawImage(img, x, y, null);
-}
 }

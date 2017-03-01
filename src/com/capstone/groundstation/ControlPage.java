@@ -1,23 +1,3 @@
-/*
- * This file is part of CapstoneGroundStation.
- *
- * CapstoneGroundStation is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * CapstoneGroundStation is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with CapstoneGroundStation.  If not, see <http://www.gnu.org/licenses/>.
- *
- * Copyright 2016-2017 Brandon Lee, Veronica Eaton
- * 
- * CapstoneGroundStation makes use of JxBrowser (https://www.teamdev.com/jxbrowser)
- */
 package com.capstone.groundstation;
 
 import java.awt.event.ActionListener;
@@ -49,15 +29,12 @@ import org.jxmapviewer.viewer.TileFactoryInfo;
 
 /**
  * This is the 'In-Flight' screen
- *
- * @author Brandon Lee
- *
  */
 public class ControlPage extends JFrame {
 	private static final long serialVersionUID = 1L;
 	
 	private boolean videoOn = false;
-	private boolean bodyCount = false;
+	private boolean objectDetect = false;
 	
 	
 	//Responsible for displaying VLC player and .sdp stream
@@ -78,10 +55,10 @@ public class ControlPage extends JFrame {
 	//Python script execution strings
 	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
 	private static final String pythonExePath = "C:\\Python27\\python.exe ";
-	private static final String videoFeedParamsPath = "sololink.sdp";	//TODO change to path to sdp file
+	private static final String videoFeedParamsPath = "sololink.sdp";
+	private static String flightScriptCommand;
 	
 	//define patterns for parsing vehicleStats.py output
-	//TODO these patterns look for a number and then end of line; likely need to change assuming there are units after the numbers
 	private static final List<Pattern> regexs = Arrays.asList(
 					Pattern.compile("Vehicle state:$"),
 					Pattern.compile("Relative Altitude:\\s.*$"),
@@ -114,50 +91,29 @@ public class ControlPage extends JFrame {
 	
 	private JavaSSH jsch;
 	
-	
-	
-	/**
-	 * Launch the application.
-	 * TODO testing purposes only, remove this main method after complete integration
-	 */
-	public static void main(String[] args) {
-		
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					 UIManager.setLookAndFeel(
-					 UIManager.getSystemLookAndFeelClassName());
-					    
-					ControlPage frame = new ControlPage(true, false);
-					frame.setExtendedState(JFrame.MAXIMIZED_BOTH); 
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
 
 	/**
 	 * Construct the frame.
 	 * @param vidOn is a flag for enabling live stream of drone camera
 	 */
-	public ControlPage(boolean vidOn, boolean bodyCount) {
+	public ControlPage(boolean vidOn, boolean objectDetect, String alt, String rad, List<GeoPosition> wp) {
 		super("Ground Station");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e){
-				if(videoOn)
-					mediaPlayerComponent.release();
-				droneStatsHandler.cancel(true);
+				//cancel all active threads
+				executeAbortSequence();
 				System.exit(0);
 			}
 		});
 		
 		this.videoOn = vidOn;
-		this.bodyCount = bodyCount;
+		this.objectDetect = objectDetect;
+		
+		//prepare arguments for flight script
+		buildFlightParamString(alt, rad, wp);
 		
 		if(videoOn){	//find libVLC
 			boolean found = new NativeDiscovery().discover();
@@ -179,7 +135,7 @@ public class ControlPage extends JFrame {
 		//initiate thread for update drone location on jxmapviewer2 component
 		fetchDroneLoc();
 		
-		if(!videoOn){
+		if(objectDetect){
 			fetchVidAnalytics();
 		}
 		//initiate video feed if selected
@@ -194,11 +150,11 @@ public class ControlPage extends JFrame {
 	private void createGUI(){
 		JPanel leftPanel = new JPanel(new BorderLayout());
 		JPanel statsPanel = new JPanel();
-		JPanel rightPanel = new JPanel(new BorderLayout());
+		statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
 		
 		JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		splitPane.setBorder(BorderFactory.createEmptyBorder());
 		
-		statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
 		JPanel vidPanel = new JPanel(new BorderLayout());
 		
 		droneStats = new JTextArea();
@@ -219,30 +175,14 @@ public class ControlPage extends JFrame {
 		abortButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if(videoOn)
-					mediaPlayerComponent.release();
-				if(bodyCount){
-					vidAnalyticHandler.cancel(true);
-					
-					if(jsch!=null)
-					jsch.close();
-				}
-				droneStatsHandler.cancel(true);
-				droneLocHandler.cancel(true);
-				
-				try {
-					executeAbortScripts();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+				//cancel all active threads 
+				executeAbortSequence();
 				
 				//close control page and return to setup page
 				dispose();
 				SetupPage setupPage = new SetupPage();
 				//setupPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
-				setupPage.setVisible(true);
-				
+				setupPage.setVisible(true);	
 			}
 		});
 		
@@ -250,13 +190,6 @@ public class ControlPage extends JFrame {
 		JLabel attributesLabel = new JLabel("Drone Attributes");
 		attributesLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		attributesLabel.setForeground(new Color(0, 153, 255));
-		
-		JLabel analyticsLabel = new JLabel("Video Analytics");
-		analyticsLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
-		analyticsLabel.setForeground(new Color(0, 153, 255));
-		
-		vidAnalytics = new JLabel();
-		vidAnalytics.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		
 		statsPanel.add(attributesLabel);
 		statsPanel.add(scrollPane);
@@ -268,33 +201,32 @@ public class ControlPage extends JFrame {
 		
 		if(videoOn){
 			splitPane.setDividerSize(10);
-			splitPane.setBorder(BorderFactory.createEmptyBorder());
+			splitPane.setResizeWeight(0.5);
 			
 			mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
 			mediaPlayerComponent.setMinimumSize(new Dimension(10, 60));
 			vidPanel.add(mediaPlayerComponent);
-			splitPane.setBottomComponent(vidPanel);	
-			splitPane.setResizeWeight(0.5);
 			
+			splitPane.setBottomComponent(vidPanel);	
 			splitPane.setTopComponent(mapViewer);
-			splitPane.setResizeWeight(0.5);
 		}
 		else{
+			JLabel analyticsLabel = new JLabel("Video Analytics");
+			analyticsLabel.setFont(new Font("Tahoma", Font.PLAIN, 20));
+			analyticsLabel.setForeground(new Color(0, 153, 255));
+			
+			vidAnalytics = new JLabel();
+			vidAnalytics.setFont(new Font("Tahoma", Font.PLAIN, 15));
+			
 			statsPanel.add(analyticsLabel);
 			statsPanel.add(vidAnalytics);
-			splitPane.setTopComponent(rightPanel);
-			rightPanel.add(mapViewer);
+			splitPane.setTopComponent(mapViewer);
 		}
 		
 		
 		getContentPane();
 		add(leftPanel, BorderLayout.WEST);
-		
-		if(videoOn)
-			add(splitPane, BorderLayout.CENTER);
-		else
-			add(rightPanel, BorderLayout.CENTER);
-		
+		add(splitPane, BorderLayout.CENTER);
 		pack();
 		setSize(1280, 720);
 	}
@@ -399,7 +331,6 @@ public class ControlPage extends JFrame {
 	/**
 	 * Read current values of drones attributes from vehicleStats.py and update textView
 	 * NOTE: Never done regular expression before so if there is a better way to do this please fix
-	 * TODO include body count updates here - as of now, not sure where that value will come from 
 	 */
 	private void updateUI(){
 		
@@ -436,12 +367,10 @@ public class ControlPage extends JFrame {
 					droneLat = Double.parseDouble(line.substring(10));
 				if(line.contains("Mode"))
 					attributes.setLength(0);
+
 				
-				/**
-				 * TODO fetch analytics data and update here
-				 */
 				if(!videoOn)
-					vidAnalytics.setText(analyticData);	//testing purposes only
+					vidAnalytics.setText(analyticData);	
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -450,7 +379,6 @@ public class ControlPage extends JFrame {
 	
 	/**
 	 * Execute python scripts required for flight
-	 * TODO add Simon's scripts through SSH here
 	 * @throws IOException
 	 */
 	private void executeLaunchScripts() throws IOException{
@@ -460,26 +388,42 @@ public class ControlPage extends JFrame {
 		
 		// create runtime to execute python scripts
 		Runtime rt = Runtime.getRuntime();
-		Process pr = rt.exec("python scripts/vehicleStats.py");
+		Process statsProcess = rt.exec("python scripts/vehicleStats.py");
 		 
 		// initialize input stream - this will be used to read output from python scripts
-		pyConsolInpt = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+		pyConsolInpt = new BufferedReader(new InputStreamReader(statsProcess.getInputStream()));
+		
+		Process flightProcess = rt.exec(flightScriptCommand);
 	}
 	
 	/**
-	 * Execute python scripts required for a ReturnToHome
-	 * Not sure if these will be local or through SSH
-	 * @throws IOException
+	 * Cancel flight and return to home
 	 */
-	private void executeAbortScripts() throws IOException{
-		String[] cmd = new String[2];
-		cmd[0] = pythonExePath;
-		cmd[1] = "INSERT PATH TO SCRIPTS";
+	private void executeAbortSequence(){
+		if(videoOn)
+			mediaPlayerComponent.release();
+		if(objectDetect){
+			vidAnalyticHandler.cancel(true);
+
+			if(jsch!=null)
+			jsch.close();
+		}
+		droneStatsHandler.cancel(true);
+		droneLocHandler.cancel(true);
+	}
+	
+	private void buildFlightParamString(String alt, String rad, List<GeoPosition> waypoints){
+		StringBuilder args = new StringBuilder();
 		
+		args.append("python scripts/flight.py --waypoints");
+		for(GeoPosition wp : waypoints)
+			args.append(" " + wp.getLongitude() + " " + wp.getLatitude());
+		args.append(" --altitude " + alt);
+		args.append(" --radius " + rad);
 		
-		// create runtime to execute python scripts
-		//Runtime rt = Runtime.getRuntime();
-		//Process pr = rt.exec(cmd);
+		flightScriptCommand = args.toString();
+		
+		System.out.println(flightScriptCommand);
 	}
 	
 	/**
