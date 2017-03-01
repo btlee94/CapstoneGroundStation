@@ -18,11 +18,13 @@ ap.add_argument("-r","--radius", help="Desired parameter radius for all waypoint
 args = vars(ap.parse_args())
 
 if not args.get("altitude", False):
+	#if not specified, set to 20m relative to home
     desiredAlt = 20
 else:
     desiredAlt = args["altitude"]
 
 if not args.get("radius", False):
+	#if not specified, set to 15m
     desiredRadius = 15
 else:
     desiredRadius = args["radius"]
@@ -33,13 +35,15 @@ else:
     desiredWaypoints = args["waypoints"]
 
 
+#given an array of size l, return n-dimension array (ex arr=[1,2,3,4,5,6] -> chunks(arr,2) -> [[1,2],[3,4],[5,6]])
 def chunks(l,n):
 	return [l[i:i+n] for i in range(0, len(l), n)]
 
 
-
+#Split string at white spaces, store each value into array
 coords = desiredWaypoints.split()
 
+#create 2d array of longitude,latitude pairs
 order = chunks(coords,2)
 	
 
@@ -168,6 +172,8 @@ def get_distance_metres(aLocation1, aLocation2):
     Returns the ground distance in metres between two LocationGlobal objects.
     Formula using the haversine formula as seen at: http://www.movable-type.co.uk/scripts/latlong.html
     """
+
+	#old code - not accurate
     #dlat = aLocation2.lat - aLocation1.lat
     #dlong = aLocation2.lon - aLocation1.lon
     #return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
@@ -338,11 +344,14 @@ print "Home location is: %s" % home
 # sleep so we can see the change in map
 time.sleep(10)
 
+#set this as argument?
 vehicle.groundspeed=10
 
 #convert str to float
 radius = float(desiredRadius)
 
+
+#for each set of coordinates/waypoints
 for i in range(len(order)):
 
     targetLocation = LocationGlobalRelative(float(order[i][0]),float(order[i][1]),alt)
@@ -377,6 +386,8 @@ for i in range(len(order)):
 #vehicle.simple_goto(cLocation)
 
     time.sleep(5)
+
+#Complete square parameter around waypoint
 
     print("Completing square route around target")
     print("NW Corner")
