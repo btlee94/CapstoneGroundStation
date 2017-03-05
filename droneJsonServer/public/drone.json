@@ -1,0 +1,20 @@
+{
+	"analytics": {
+		"flag": "0"
+	},
+
+	"droneStats":
+	{
+		"battery": "0",
+		"velocity": "0",
+		"longitude": "0",
+		"latitude": "0",
+		"relAltitude": "0",
+		"vehicleState": "0",
+		"heading": "0",
+		"homeLongitude": "0",
+		"homeLatitude": "0",
+		"targetLatitude": "0",
+		"targetLongitude": "0"
+	}
+}

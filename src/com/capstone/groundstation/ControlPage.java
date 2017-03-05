@@ -49,12 +49,16 @@ public class ControlPage extends JFrame {
 	private ScheduledFuture<?> droneStatsHandler;
 	private ScheduledFuture<?> droneLocHandler;
 	private ScheduledFuture<?> vidAnalyticHandler;
+	private ScheduledFuture<?> jsonHandler;
 	
 	private JTextArea droneStats;
 	private JLabel vidAnalytics;
 	
 	//Reads from command line application executed by python scripts
 	private BufferedReader pyConsolInpt;
+	
+	//json file path
+	private static final String jsonPath = "droneJsonServer\\public\\drone.json";
 	
 	//Python script execution strings
 	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
@@ -143,6 +147,10 @@ public class ControlPage extends JFrame {
 	
 		//initiate thread for update drone location on jxmapviewer2 component
 		fetchDroneLoc();
+		
+		//initiate thread for updating JSON file with analytics and drone stats
+		//runUpdateJson();
+		
 		
 		if(objectDetect){
 			fetchVidAnalytics();
@@ -272,7 +280,12 @@ public class ControlPage extends JFrame {
 	private void readDroneStats(){
 		int reRunInterval = 2;	// seconds
 		final Runnable statsUpdater = new Runnable() {
-			public void run() { updateUI(); }
+			public void run() { try {
+				updateUI();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} }
 		};
 		
 		
@@ -296,11 +309,14 @@ public class ControlPage extends JFrame {
 		cLong += 0.0001;
 		cLat += 0.0001;
 		
+		double longitude = Double.parseDouble(Stats.longitude);
+		double lat = Double.parseDouble(Stats.latitude);
+		
 		//if a GPS lock exists, use the drone's GPS coordinates
-		if(droneLong != 0 && droneLat != 0)
-			currLoc = new GeoPosition(droneLong, droneLat);
+		if(longitude != 0 && lat != 0)
+			currLoc = new GeoPosition(lat, longitude);
 		else
-			currLoc = new GeoPosition(cLong, cLat);
+			currLoc = new GeoPosition(cLat, cLong);
 		
 		smm.update(currLoc);
 		
@@ -337,11 +353,39 @@ public class ControlPage extends JFrame {
 		jsch.fetchAnalyticData();
 	}
 	
+	
+	
+	private void runUpdateJson(){
+		String path = "droneJsonServer/public/drone.json";
+		
+		final JsonWriter jw = new JsonWriter(path);
+		
+		final Runnable statsUpdater4 = new Runnable() {
+			public void run() {
+				try{
+					updateJson(jw);
+				}
+				catch(Exception e){
+					
+				}
+			}
+		};
+		
+		final ScheduledExecutorService scheduler4 = Executors.newScheduledThreadPool(1);
+		jsonHandler = scheduler4.schedule(statsUpdater4, 1, TimeUnit.SECONDS);
+		
+	}
+	
+	private void updateJson(JsonWriter jw){
+		jw.update();
+	}
+	
 	/**
 	 * Read current values of drones attributes from vehicleStats.py and update textView
 	 * NOTE: Never done regular expression before so if there is a better way to do this please fix
+	 * @throws IOException 
 	 */
-	private void updateUI(){
+	private void updateUI() throws IOException{
 		
 		// read the output from vehicleStats.py and update screen
 		StringBuilder attributes = new StringBuilder();
@@ -382,7 +426,7 @@ public class ControlPage extends JFrame {
 					vidAnalytics.setText(Stats.analytics);	
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			pyConsolInpt.close();
 		}
 	}
 	
@@ -398,11 +442,12 @@ public class ControlPage extends JFrame {
 		// create runtime to execute python scripts
 		Runtime rt = Runtime.getRuntime();
 		Process statsProcess = rt.exec("python scripts/vehicleStats.py");
-		 
+		
+		Runtime rt1 = Runtime.getRuntime();
 		// initialize input stream - this will be used to read output from python scripts
 		pyConsolInpt = new BufferedReader(new InputStreamReader(statsProcess.getInputStream()));
 		
-		Process flightProcess = rt.exec(flightScriptCommand);
+		Process flightProcess = rt1.exec(flightScriptCommand);
 	}
 	
 	/**
@@ -430,13 +475,22 @@ public class ControlPage extends JFrame {
 	private void buildFlightParamString(String alt, String rad, List<GeoPosition> waypoints){
 		StringBuilder args = new StringBuilder();
 		
-		args.append("python scripts/flight.py --waypoints");
-		for(GeoPosition wp : waypoints)
-			args.append(" " + wp.getLongitude() + " " + wp.getLatitude());
+		args.append("python scripts/flight.py --waypoints \"");
+		int i =0;
+		for(GeoPosition wp : waypoints){
+			if(i == 0){
+				args.append(wp.getLatitude() + " " + wp.getLongitude());
+				i++;
+			}
+			args.append(" "+ wp.getLatitude() + " " + wp.getLongitude());
+		}
+		args.append("\"");
 		args.append(" --altitude " + alt);
 		args.append(" --radius " + rad);
 		
 		flightScriptCommand = args.toString();
+		
+		System.out.println(flightScriptCommand);
 		
 		System.out.println(flightScriptCommand);
 	}

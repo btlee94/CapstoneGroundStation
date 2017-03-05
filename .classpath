@@ -2,9 +2,13 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
-	<classpathentry kind="lib" path="C:/Users/Dominic/Desktop/GCS/commons-logging-1.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Dominic/Desktop/GCS/jsch-0.1.54.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Dominic/Desktop/GCS/jxmapviewer2-2.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Dominic/Desktop/GCS/vlcj-3.10.1.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/jxmapviewer/jxmapviewer2-2.0.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/jsch-0.1.54.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/json-20140107.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/vlcj-3.10.1/jna-4.1.0.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/vlcj-3.10.1/jna-platform-4.1.0.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/vlcj-3.10.1/slf4j-api-1.7.10.jar"/>
+	<classpathentry kind="lib" path="/home/dominic/Desktop/javaApp/vlcj-3.10.1/vlcj-3.10.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
