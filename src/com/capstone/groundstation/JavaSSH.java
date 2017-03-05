@@ -93,7 +93,7 @@ public class JavaSSH {
 		// Parse data being sent back
 		try{
 		while ((dataReceived = in.readLine()) != null) {
-				ControlPage.analyticData = dataReceived;
+				Stats.analytics = dataReceived;
 
 		}
 		}

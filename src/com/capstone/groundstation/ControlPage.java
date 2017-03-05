@@ -36,6 +36,10 @@ public class ControlPage extends JFrame {
 	private boolean videoOn = false;
 	private boolean objectDetect = false;
 	
+	private String dRadius;
+	private String dAltitude;
+	private List<GeoPosition> dWaypoints;
+	
 	
 	//Responsible for displaying VLC player and .sdp stream
 	private EmbeddedMediaPlayerComponent mediaPlayerComponent;
@@ -54,6 +58,7 @@ public class ControlPage extends JFrame {
 	
 	//Python script execution strings
 	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
+	private static final String pythonScriptPath_droneFlight = "scripts\\flight.py";
 	private static final String pythonExePath = "C:\\Python27\\python.exe ";
 	private static final String videoFeedParamsPath = "sololink.sdp";
 	private static String flightScriptCommand;
@@ -112,8 +117,12 @@ public class ControlPage extends JFrame {
 		this.videoOn = vidOn;
 		this.objectDetect = objectDetect;
 		
+		this.dAltitude = alt;
+		this.dRadius = rad;
+		this.dWaypoints = wp;
+		
 		//prepare arguments for flight script
-		buildFlightParamString(alt, rad, wp);
+		buildFlightParamString(dAltitude, dRadius, dWaypoints);
 		
 		if(videoOn){	//find libVLC
 			boolean found = new NativeDiscovery().discover();
@@ -362,15 +371,15 @@ public class ControlPage extends JFrame {
 				droneStats.setText(attributes.toString());
 				
 				if(line.contains("Longitude"))
-					droneLong = Double.parseDouble(line.substring(11));
+					Stats.longitude = line.substring(11);
 				if(line.contains("Latitude"))
-					droneLat = Double.parseDouble(line.substring(10));
+					Stats.latitude = line.substring(10);
 				if(line.contains("Mode"))
 					attributes.setLength(0);
 
 				
 				if(!videoOn)
-					vidAnalytics.setText(analyticData);	
+					vidAnalytics.setText(Stats.analytics);	
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
