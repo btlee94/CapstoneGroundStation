@@ -67,18 +67,6 @@ public class ControlPage extends JFrame {
 	private static final String videoFeedParamsPath = "sololink.sdp";
 	private static String flightScriptCommand;
 	
-	//define patterns for parsing vehicleStats.py output
-	private static final List<Pattern> regexs = Arrays.asList(
-					Pattern.compile("Vehicle state:$"),
-					Pattern.compile("Relative Altitude:\\s.*$"),
-					Pattern.compile("Velocity:\\s.*$"),
-					Pattern.compile("Battery\\sPercent:\\s.*$"),
-					Pattern.compile("Groundspeed:\\s.*$"),
-					Pattern.compile("Airspeed:\\s.*$"),
-					Pattern.compile("Mode:\\s.*$"),
-					Pattern.compile("Longitude:\\s.*$"),
-					Pattern.compile("Latitude:\\s.*$"));
-	
 	private SoloMarkerManager smm;
 	
 	//Map Variables
@@ -91,12 +79,8 @@ public class ControlPage extends JFrame {
 	private double cLong;
 	private double cLat;
 	
-	//Holds the string displaying analytic data (eg., Object Not Detected, or Object Detected)
-	public static String analyticData = "";
-	
-	//Will hold the drone's GPS coordinates fetched by the buffered reader
-	private static double droneLong;
-	private static double droneLat;
+	public static Process statsProcess;
+	public static Process flightProcess;
 	
 	private JavaSSH jsch;
 	
@@ -392,24 +376,6 @@ public class ControlPage extends JFrame {
 		String line = "";
 		try {
 			while((line = pyConsolInpt.readLine()) != null) {
-				/*for(Pattern regex : regexs){
-					if(regex.matcher(line).matches()){
-						attributes.append(line);
-						attributes.append(System.lineSeparator());
-						droneStats.setText(attributes.toString());
-						
-						if(line.contains("Longitude")){
-							droneLong = Double.parseDouble(line.substring(11));
-						}
-						if(line.contains("Latitude")){
-							droneLat = Double.parseDouble(line.substring(10));							
-						}
-						//reset StringBuilder when we know output will start looping
-						if(line.contains("Mode: "))
-							attributes.setLength(0);
-					}
-				}
-				*/
 				attributes.append(line);
 				attributes.append(System.lineSeparator());
 				droneStats.setText(attributes.toString());
@@ -439,15 +405,14 @@ public class ControlPage extends JFrame {
 		//cmd[0] = pythonExePath;	//path to python.exe
 		//cmd[1] = pythonScriptPath_droneStats;	//path to python script
 		
-		// create runtime to execute python scripts
-		Runtime rt = Runtime.getRuntime();
-		Process statsProcess = rt.exec("python scripts/vehicleStats.py");
+		ProcessBuilder pb1 = new ProcessBuilder("python scripts/vehicleStats.py");
+		statsProcess = pb1.start();
 		
-		Runtime rt1 = Runtime.getRuntime();
+		ProcessBuilder pb2 = new ProcessBuilder(flightScriptCommand);
+		flightProcess = pb2.start();
+
 		// initialize input stream - this will be used to read output from python scripts
 		pyConsolInpt = new BufferedReader(new InputStreamReader(statsProcess.getInputStream()));
-		
-		Process flightProcess = rt1.exec(flightScriptCommand);
 	}
 	
 	/**
@@ -470,6 +435,8 @@ public class ControlPage extends JFrame {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		statsProcess.destroy();
+		flightProcess.destroy();
 	}
 	
 	private void buildFlightParamString(String alt, String rad, List<GeoPosition> waypoints){
