@@ -76,8 +76,8 @@ public class ControlPage extends JFrame {
 	private DefaultTileFactory tileFactory;
 	
 	//Temp long/lat variables to simulate movement on maps application
-	private double cLong;
-	private double cLat;
+	private double cLong = -114.12997; 
+	private double cLat = 51.08037;
 	
 	public static Process statsProcess;
 	public static Process flightProcess;
@@ -133,7 +133,7 @@ public class ControlPage extends JFrame {
 		fetchDroneLoc();
 		
 		//initiate thread for updating JSON file with analytics and drone stats
-		//runUpdateJson();
+		runUpdateJson();
 		
 		
 		if(objectDetect){
@@ -245,9 +245,8 @@ public class ControlPage extends JFrame {
 		
 		tileFactory.setThreadPoolSize(8);
 		
-		cLong = 51.079948;
-		cLat = -114.125534;
-		currLoc = new GeoPosition(cLong, cLat);
+
+		currLoc = new GeoPosition(cLat, cLong);
 		
 		smm.init(currLoc);
 		
@@ -297,9 +296,9 @@ public class ControlPage extends JFrame {
 		double lat = Double.parseDouble(Stats.latitude);
 		
 		//if a GPS lock exists, use the drone's GPS coordinates
-		if(longitude != 0 && lat != 0)
-			currLoc = new GeoPosition(lat, longitude);
-		else
+//		if(longitude != 0 && lat != 0)
+//			currLoc = new GeoPosition(lat, longitude);
+//		else
 			currLoc = new GeoPosition(cLat, cLong);
 		
 		smm.update(currLoc);
@@ -405,11 +404,11 @@ public class ControlPage extends JFrame {
 		//cmd[0] = pythonExePath;	//path to python.exe
 		//cmd[1] = pythonScriptPath_droneStats;	//path to python script
 		
-		ProcessBuilder pb1 = new ProcessBuilder("python scripts/vehicleStats.py");
+		ProcessBuilder pb1 = new ProcessBuilder("python","scripts/vehicleStats.py");
 		statsProcess = pb1.start();
 		
-		ProcessBuilder pb2 = new ProcessBuilder(flightScriptCommand);
-		flightProcess = pb2.start();
+		//ProcessBuilder pb2 = new ProcessBuilder(flightScriptCommand);
+		//flightProcess = pb2.start();
 
 		// initialize input stream - this will be used to read output from python scripts
 		pyConsolInpt = new BufferedReader(new InputStreamReader(statsProcess.getInputStream()));
@@ -423,9 +422,7 @@ public class ControlPage extends JFrame {
 			mediaPlayerComponent.release();
 		if(objectDetect){
 			vidAnalyticHandler.cancel(true);
-
-			if(jsch!=null)
-			jsch.close();
+			
 		}
 		droneStatsHandler.cancel(true);
 		droneLocHandler.cancel(true);
@@ -436,7 +433,7 @@ public class ControlPage extends JFrame {
 			e.printStackTrace();
 		}
 		statsProcess.destroy();
-		flightProcess.destroy();
+		//flightProcess.destroy();
 	}
 	
 	private void buildFlightParamString(String alt, String rad, List<GeoPosition> waypoints){
