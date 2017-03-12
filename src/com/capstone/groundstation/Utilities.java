@@ -39,7 +39,7 @@ public class Utilities {
 	
 	public static void launchMAVproxy() throws IOException{
 		ProcessBuilder pb = new ProcessBuilder(MAVproxyPath, MAVproxyParams);	//windows
-		//ProcessBuilder pb1 = new ProcessBuilder(mavproxy, MAVproxyParams);	//linux
+		//ProcessBuilder pb = new ProcessBuilder(mavproxy, MAVproxyParams);	//linux
 		MAVproxyProcess = pb.start();
 		
 		System.out.println(MAVproxyPath + MAVproxyParams);
@@ -47,7 +47,7 @@ public class Utilities {
 	
 	public static void launchJSONServer() throws IOException{
 		ProcessBuilder pb = new ProcessBuilder(nodeExePath, JSONServer);				//windows
-		//ProcessBuilder pb1 = new ProcessBuilder("node", "droneJsonServer/index.js");	//linux
+		//ProcessBuilder pb = new ProcessBuilder("node", "droneJsonServer/index.js");	//linux
 		jsonServerProcess = pb.start();
 	}
 	
