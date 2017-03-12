@@ -3,7 +3,6 @@ package com.capstone.groundstation;
 public class Stats {
 	
 	public static String analytics = "0";
-	
 	public static String battery = "0";
 	public static String velocity = "0";
 	public static String heading = "0";

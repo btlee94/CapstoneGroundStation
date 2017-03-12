@@ -35,11 +35,7 @@ public class ControlPage extends JFrame {
 	
 	private boolean videoOn = false;
 	private boolean objectDetect = false;
-	
-	private String dRadius;
-	private String dAltitude;
-	private List<GeoPosition> dWaypoints;
-	
+
 	
 	//Responsible for displaying VLC player and .sdp stream
 	private EmbeddedMediaPlayerComponent mediaPlayerComponent;
@@ -55,17 +51,12 @@ public class ControlPage extends JFrame {
 	private JLabel vidAnalytics;
 	
 	//Reads from command line application executed by python scripts
-	private BufferedReader pyConsolInpt;
+	private BufferedReader droneStatsReader;
 	
 	//json file path
 	private static final String jsonPath = "droneJsonServer\\public\\drone.json";
 	
-	//Python script execution strings
-	private static final String pythonScriptPath_droneStats = "scripts\\droneStats.py";
-	private static final String pythonScriptPath_droneFlight = "scripts\\flight.py";
-	private static final String pythonExePath = "C:\\Python27\\python.exe ";
 	private static final String videoFeedParamsPath = "sololink.sdp";
-	private static String flightScriptCommand;
 	
 	private SoloMarkerManager smm;
 	
@@ -79,9 +70,6 @@ public class ControlPage extends JFrame {
 	private double cLong = -114.12997; 
 	private double cLat = 51.08037;
 	
-	public static Process statsProcess;
-	public static Process flightProcess;
-	
 	private JavaSSH jsch;
 	
 
@@ -89,7 +77,7 @@ public class ControlPage extends JFrame {
 	 * Construct the frame.
 	 * @param vidOn is a flag for enabling live stream of drone camera
 	 */
-	public ControlPage(boolean vidOn, boolean objectDetect, String alt, String rad, List<GeoPosition> wp) {
+	public ControlPage(boolean vidOn, boolean objectDetect) {
 		super("Ground Station");
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
@@ -98,6 +86,8 @@ public class ControlPage extends JFrame {
 			public void windowClosing(WindowEvent e){
 				//cancel all active threads
 				executeAbortSequence();
+				Utilities.closeScriptProcesses();
+				Utilities.closeCLIProcesses();
 				System.exit(0);
 			}
 		});
@@ -105,23 +95,15 @@ public class ControlPage extends JFrame {
 		this.videoOn = vidOn;
 		this.objectDetect = objectDetect;
 		
-		this.dAltitude = alt;
-		this.dRadius = rad;
-		this.dWaypoints = wp;
-		
-		//prepare arguments for flight script
-		buildFlightParamString(dAltitude, dRadius, dWaypoints);
-		
-		if(videoOn){	//find libVLC
-			boolean found = new NativeDiscovery().discover();
-		}
+		//find libVLC
+		boolean found = new NativeDiscovery().discover();
 		
 		//draw the window components
 		createGUI();	
 		
 		// execute launch python scripts
 		try {
-			executeLaunchScripts();	
+			Utilities.executeLaunchScripts();	
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -140,8 +122,10 @@ public class ControlPage extends JFrame {
 			fetchVidAnalytics();
 		}
 		//initiate video feed if selected
-		else
-			playVideoFeed();	
+		else{
+			if(found)
+				playVideoFeed();
+		}	
 	}
 	
 	/**
@@ -178,6 +162,7 @@ public class ControlPage extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				//cancel all active threads 
 				executeAbortSequence();
+				Utilities.closeScriptProcesses();
 				
 				//close control page and return to setup page
 				dispose();
@@ -257,25 +242,18 @@ public class ControlPage extends JFrame {
 		
 	}
 	
-	/**
-	 * Initiate thread for updating drone stats every 'updateInterval' seconds
-	 */
+
 	private void readDroneStats(){
-		int reRunInterval = 2;	// seconds
 		final Runnable statsUpdater = new Runnable() {
 			public void run() { try {
 				updateUI();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} }
 		};
 		
-		
-		//update drone stats in real time (speed depends on python script) with initial delay of 3 seconds to allow drone to arm and launch
-		//if thread exists before mission complete, re launch thread after 'reRunInterval' seconds
 		final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-		droneStatsHandler = scheduler.scheduleAtFixedRate(statsUpdater, 3, reRunInterval, TimeUnit.SECONDS);
+		droneStatsHandler = scheduler.schedule(statsUpdater, 1, TimeUnit.SECONDS);
 	}
 	
 	private void fetchDroneLoc(){
@@ -336,10 +314,8 @@ public class ControlPage extends JFrame {
 		jsch.fetchAnalyticData();
 	}
 	
-	
-	
 	private void runUpdateJson(){
-		String path = "droneJsonServer/public/drone.json";
+		String path = "droneJsonServer/public/drone.json";		//linux
 		
 		final JsonWriter jw = new JsonWriter(path);
 		
@@ -365,54 +341,48 @@ public class ControlPage extends JFrame {
 	
 	/**
 	 * Read current values of drones attributes from vehicleStats.py and update textView
-	 * NOTE: Never done regular expression before so if there is a better way to do this please fix
 	 * @throws IOException 
 	 */
 	private void updateUI() throws IOException{
 		
 		// read the output from vehicleStats.py and update screen
+		droneStatsReader = new BufferedReader(new InputStreamReader(Utilities.getStatsInputStream()));
 		StringBuilder attributes = new StringBuilder();
 		String line = "";
 		try {
-			while((line = pyConsolInpt.readLine()) != null) {
+			while((line = droneStatsReader.readLine()) != null) {
 				attributes.append(line);
 				attributes.append(System.lineSeparator());
 				droneStats.setText(attributes.toString());
 				
-				if(line.contains("Longitude"))
+				if(line.contains("Altitude"))
+					Stats.relAltitude = line.substring(19);
+				else if(line.contains("Velocity"))
+					Stats.velocity = line.substring(10);
+				else if(line.contains("Battery"))
+					Stats.battery = line.substring(17);
+				//else if(line.contains("Groundspeed"))
+					//Stats.grndSpeed = line.substring(13);
+				//else if(line.contains("Airspeed"))
+					//Stats.airSpeed = line.substring(10);
+				else if(line.contains("Longitude"))
 					Stats.longitude = line.substring(11);
-				if(line.contains("Latitude"))
+				else if(line.contains("Latitude"))
 					Stats.latitude = line.substring(10);
-				if(line.contains("Mode"))
+				else if(line.contains("Mode")){
+					//Stats.mode = line.substring(6);
 					attributes.setLength(0);
+				}
 
 				
-				if(!videoOn)
+				if(objectDetect)
 					vidAnalytics.setText(Stats.analytics);	
 			}
 		} catch (IOException e) {
-			pyConsolInpt.close();
+			droneStatsReader.close();
 		}
 	}
 	
-	/**
-	 * Execute python scripts required for flight
-	 * @throws IOException
-	 */
-	private void executeLaunchScripts() throws IOException{
-		//String[] cmd = new String[2];
-		//cmd[0] = pythonExePath;	//path to python.exe
-		//cmd[1] = pythonScriptPath_droneStats;	//path to python script
-		
-		ProcessBuilder pb1 = new ProcessBuilder("python","scripts/vehicleStats.py");
-		statsProcess = pb1.start();
-		
-		//ProcessBuilder pb2 = new ProcessBuilder(flightScriptCommand);
-		//flightProcess = pb2.start();
-
-		// initialize input stream - this will be used to read output from python scripts
-		pyConsolInpt = new BufferedReader(new InputStreamReader(statsProcess.getInputStream()));
-	}
 	
 	/**
 	 * Cancel flight and return to home
@@ -420,44 +390,19 @@ public class ControlPage extends JFrame {
 	private void executeAbortSequence(){
 		if(videoOn)
 			mediaPlayerComponent.release();
-		if(objectDetect){
+		else
 			vidAnalyticHandler.cancel(true);
-			
-		}
+		
 		droneStatsHandler.cancel(true);
 		droneLocHandler.cancel(true);
+		jsonHandler.cancel(true);
 		try {
-			pyConsolInpt.close();
+			droneStatsReader.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		statsProcess.destroy();
-		//flightProcess.destroy();
 	}
 	
-	private void buildFlightParamString(String alt, String rad, List<GeoPosition> waypoints){
-		StringBuilder args = new StringBuilder();
-		
-		args.append("python scripts/flight.py --waypoints \"");
-		int i =0;
-		for(GeoPosition wp : waypoints){
-			if(i == 0){
-				args.append(wp.getLatitude() + " " + wp.getLongitude());
-				i++;
-			}
-			args.append(" "+ wp.getLatitude() + " " + wp.getLongitude());
-		}
-		args.append("\"");
-		args.append(" --altitude " + alt);
-		args.append(" --radius " + rad);
-		
-		flightScriptCommand = args.toString();
-		
-		System.out.println(flightScriptCommand);
-		
-		System.out.println(flightScriptCommand);
-	}
 	
 	/**
 	 * Play video feed from drone

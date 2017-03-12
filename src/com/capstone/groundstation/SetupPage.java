@@ -26,6 +26,9 @@ import javax.swing.event.MouseInputAdapter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 
@@ -47,9 +50,6 @@ public class SetupPage extends JFrame {
 	private boolean videoOn = false;
 	private int waypointNum = 1;
 	private StringBuilder currentPoints = new StringBuilder();
-	private String altitude;
-	private String radius;
-	private List<GeoPosition> waypoints;
 	
 	//Map variables
 	private JXMapKit jXMapKit;
@@ -82,15 +82,30 @@ public class SetupPage extends JFrame {
 
 	/**
 	 * Construct the frame.
-	 * TODO pass bodyCount and any other script parameters to control page as flags - control page will handle scripts
 	 */
 	public SetupPage() {
 		super("Ground Station");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e){
+				Utilities.closeCLIProcesses();
+				System.exit(0);
+			}
+		});
 		
 		//draw the window components
 		createGUI();
+		
+		try {
+			if(Utilities.MAVproxyProcess == null)
+				Utilities.launchMAVproxy();
+			if(Utilities.jsonServerProcess == null)
+				Utilities.launchJSONServer();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -123,13 +138,13 @@ public class SetupPage extends JFrame {
 				if(altitudeField.getText().equals("") || radiusField.getText().equals(""))
 					return;
 				
-				//get parameters needed for flight script
-				getFlightParams();
+				//set parameters needed for flight script
+				setFlightParams();
 				
 				//close window and open control page
 				dispose();
 				
-				ControlPage controlPage = new ControlPage(videoOn, objectDetect, altitude, radius, waypoints);
+				ControlPage controlPage = new ControlPage(videoOn, objectDetect);
 				controlPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 				controlPage.setVisible(true);
 			}
@@ -292,9 +307,7 @@ public class SetupPage extends JFrame {
 		setSize(1280, 720);
 	}
 	
-	public void getFlightParams() {
-		waypoints = wpm.getWaypoints();
-		altitude = altitudeField.getText();
-		radius = radiusField.getText();
+	public void setFlightParams() {
+		Utilities.buildFlightParamString(altitudeField.getText(), radiusField.getText(), wpm.getWaypoints());
 	}
 }
