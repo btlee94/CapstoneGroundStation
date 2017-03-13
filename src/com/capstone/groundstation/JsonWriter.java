@@ -24,16 +24,14 @@ public class JsonWriter {
 			
 			droneStats = new JSONObject()
 			.put("battery", Stats.battery)
-			.put("velocity", Stats.velocity)
 			.put("longitude", Stats.longitude)
 			.put("latitude", Stats.latitude)
 			.put("relAltitude", Stats.relAltitude)
-			.put("vehicleState", Stats.vehicleState)
+			.put("vehicleMode", Stats.vehicleMode)
 			.put("heading", Stats.heading)
 			.put("homeLongitude", Stats.homeLong)
 			.put("homeLatitude", Stats.homeLat)
-			.put("targetLongitude", Stats.targLong)
-			.put("targetLatitude", Stats.targLat);
+			.put("groundspeed", Stats.grndSpeed);
 			
 			analytics = new JSONObject()
 			.put("flag",Stats.analytics);

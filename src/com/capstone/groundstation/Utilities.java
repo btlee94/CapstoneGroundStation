@@ -7,8 +7,6 @@ import org.jxmapviewer.viewer.GeoPosition;
 
 
 public class Utilities {
-		private static final String[] MAVproxyCmd = {"C:\\Program Files (x86)\\MAVProxy\\mavproxy.exe", "master=udpin:0.0.0.0:14550", "out=udpout:127.0.0.1:14552", "out=udpout:127.0.0.1:14549", "out=udpout:127.0.0.1:14555"};
-		private static final String[] JSONServerCmd = {"C:\\Program Files\\nodejs\\node.exe", "droneJsonServer\\index.js"};
 		private static final String[] droneStatsScriptCmd = {"C:\\Python27\\python.exe", "scripts\\vehicleStats.py"};
 		private static String[] flightScriptCmd = new String[5];
 		private static String flightScriptParams;
@@ -27,31 +25,9 @@ public class Utilities {
 		//ProcessBuilder pb1 = new ProcessBuilder("python", "scripts/vehicleStats.py");			//linux
 		statsProcess = pb1.start();
 		
-		ProcessBuilder pb2 = new ProcessBuilder(flightScriptCmd);	//windows
+		//ProcessBuilder pb2 = new ProcessBuilder(flightScriptCmd);												//windows
 		//ProcessBuilder pb2 = new ProcessBuilder("python", "scripts/flight.py", flightScriptParams);				//linux
-		flightProcess = pb2.start();
-	}
-	
-	public static void launchMAVproxy() throws IOException{
-<<<<<<< HEAD
-		ProcessBuilder pb = new ProcessBuilder(MAVproxyCmd);	//windows
-		//ProcessBuilder pb = new ProcessBuilder(mavproxy, MAVproxyParams);	//linux
-=======
-		ProcessBuilder pb = new ProcessBuilder(MAVproxyPath, MAVproxyParams);	//windows
-		//ProcessBuilder pb1 = new ProcessBuilder(mavproxy, MAVproxyParams);	//linux
->>>>>>> parent of 73bab90... fix
-		MAVproxyProcess = pb.start();
-	}
-	
-	public static void launchJSONServer() throws IOException{
-<<<<<<< HEAD
-		ProcessBuilder pb = new ProcessBuilder(JSONServerCmd);				//windows
-		//ProcessBuilder pb = new ProcessBuilder("node", "droneJsonServer/index.js");	//linux
-=======
-		ProcessBuilder pb = new ProcessBuilder(nodeExePath, JSONServer);				//windows
-		//ProcessBuilder pb1 = new ProcessBuilder("node", "droneJsonServer/index.js");	//linux
->>>>>>> parent of 73bab90... fix
-		jsonServerProcess = pb.start();
+		//flightProcess = pb2.start();
 	}
 	
 	public static InputStream getStatsInputStream(){
@@ -85,11 +61,6 @@ public class Utilities {
 	
 	public static void closeScriptProcesses(){
 		statsProcess.destroy();
-		flightProcess.destroy();
-	}
-	
-	public static void closeCLIProcesses(){
-		MAVproxyProcess.destroy();
-		jsonServerProcess.destroy();
+		//flightProcess.destroy();
 	}
 }

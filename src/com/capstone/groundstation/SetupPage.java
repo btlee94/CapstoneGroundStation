@@ -90,22 +90,12 @@ public class SetupPage extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e){
-				Utilities.closeCLIProcesses();
 				System.exit(0);
 			}
 		});
 		
 		//draw the window components
 		createGUI();
-		
-		try {
-			if(Utilities.MAVproxyProcess == null)
-				Utilities.launchMAVproxy();
-			if(Utilities.jsonServerProcess == null)
-				Utilities.launchJSONServer();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 	
 	/**

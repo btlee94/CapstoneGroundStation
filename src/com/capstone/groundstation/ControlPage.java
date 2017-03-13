@@ -87,7 +87,6 @@ public class ControlPage extends JFrame {
 				//cancel all active threads
 				executeAbortSequence();
 				Utilities.closeScriptProcesses();
-				Utilities.closeCLIProcesses();
 				System.exit(0);
 			}
 		});
@@ -146,7 +145,7 @@ public class ControlPage extends JFrame {
 		droneStats.setEditable(false);
 		droneStats.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		droneStats.setBackground(null);
-		droneStats.setRows(11);
+		droneStats.setRows(15);
 		JScrollPane scrollPane  = new JScrollPane(droneStats);
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
 		
@@ -351,29 +350,33 @@ public class ControlPage extends JFrame {
 		String line = "";
 		try {
 			while((line = droneStatsReader.readLine()) != null) {
+				if(line.equals("end")){
+					attributes.setLength(0);
+					continue;
+				}
 				attributes.append(line);
 				attributes.append(System.lineSeparator());
 				droneStats.setText(attributes.toString());
 				
 				if(line.contains("Altitude"))
 					Stats.relAltitude = line.substring(19);
-				else if(line.contains("Velocity"))
-					Stats.velocity = line.substring(10);
 				else if(line.contains("Battery"))
 					Stats.battery = line.substring(17);
-				//else if(line.contains("Groundspeed"))
-					//Stats.grndSpeed = line.substring(13);
-				//else if(line.contains("Airspeed"))
-					//Stats.airSpeed = line.substring(10);
+				else if(line.contains("Groundspeed"))
+					Stats.grndSpeed = line.substring(13);
+				else if(line.contains("Heading"))
+					Stats.heading = line.substring(9);
+				else if(line.contains("Mode"))
+					Stats.vehicleMode = line.substring(6);
 				else if(line.contains("Longitude"))
 					Stats.longitude = line.substring(11);
 				else if(line.contains("Latitude"))
 					Stats.latitude = line.substring(10);
-				else if(line.contains("Mode")){
-					//Stats.mode = line.substring(6);
-					attributes.setLength(0);
-				}
-
+				else if(line.contains("Home Longitude"))
+					Stats.homeLong = line.substring(16);
+				else if(line.contains("Home Latitude"))
+					Stats.homeLat = line.substring(15);
+				
 				
 				if(objectDetect)
 					vidAnalytics.setText(Stats.analytics);	
