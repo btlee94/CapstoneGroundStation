@@ -343,7 +343,6 @@ public class ControlPage extends JFrame {
 	 * @throws IOException 
 	 */
 	private void updateUI() throws IOException{
-		
 		// read the output from vehicleStats.py and update screen
 		droneStatsReader = new BufferedReader(new InputStreamReader(Utilities.getStatsInputStream()));
 		StringBuilder attributes = new StringBuilder();
@@ -383,7 +382,7 @@ public class ControlPage extends JFrame {
 			}
 		} catch (IOException e) {
 			droneStatsReader.close();
-		}
+		}	
 	}
 	
 	
@@ -411,6 +410,6 @@ public class ControlPage extends JFrame {
 	 * Play video feed from drone
 	 */
 	private void playVideoFeed(){
-		mediaPlayerComponent.getMediaPlayer().playMedia(videoFeedParamsPath);
+		mediaPlayerComponent.getMediaPlayer().playMedia("droneFootage.mkv");
 	}
 }
