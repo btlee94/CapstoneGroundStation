@@ -354,7 +354,7 @@ radius = float(desiredRadius)
 #for each set of coordinates/waypoints
 for i in range(len(order)):
 
-    targetLocation = LocationGlobalRelative(float(order[i][0]),float(order[i][1]),alt)
+    targetLocation = LocationGlobalRelative(float(order[i][0]),float(order[i][1]),0)
 
     print("Target Position: %s") % targetLocation
     vehicle.simple_goto(targetLocation)
