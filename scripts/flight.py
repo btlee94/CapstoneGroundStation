@@ -416,4 +416,3 @@ time.sleep(5)
 #Close vehicle object before exiting script
 print "Close vehicle object"
 vehicle.close()
-

@@ -2,7 +2,6 @@ package com.capstone.groundstation;
 
 import java.io.File;
 import java.io.FileWriter;
-
 import org.json.JSONObject;
 
 public class JsonWriter {

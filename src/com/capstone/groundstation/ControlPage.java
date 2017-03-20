@@ -6,13 +6,10 @@ import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import java.awt.event.ActionEvent;
 
 import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
@@ -69,6 +66,7 @@ public class ControlPage extends JFrame {
 	//Temp long/lat variables to simulate movement on maps application
 	private double cLong = -114.12997; 
 	private double cLat = 51.08037;
+
 	
 	private JavaSSH jsch;
 	
@@ -273,9 +271,9 @@ public class ControlPage extends JFrame {
 		double lat = Double.parseDouble(Stats.latitude);
 		
 		//if a GPS lock exists, use the drone's GPS coordinates
-//		if(longitude != 0 && lat != 0)
-//			currLoc = new GeoPosition(lat, longitude);
-//		else
+		if(longitude != 0 && lat != 0)
+			currLoc = new GeoPosition(lat, longitude);
+		else
 			currLoc = new GeoPosition(cLat, cLong);
 		
 		smm.update(currLoc);
@@ -316,7 +314,7 @@ public class ControlPage extends JFrame {
 	private void runUpdateJson(){
 		String path = "droneJsonServer/public/drone.json";		//linux
 		
-		final JsonWriter jw = new JsonWriter(path);
+		final JsonWriter jw = new JsonWriter(jsonPath);
 		
 		final Runnable statsUpdater4 = new Runnable() {
 			public void run() {
@@ -354,7 +352,7 @@ public class ControlPage extends JFrame {
 					continue;
 				}
 				attributes.append(line);
-				attributes.append(System.lineSeparator());
+				attributes.append("\n");
 				droneStats.setText(attributes.toString());
 				
 				if(line.contains("Altitude"))
@@ -367,16 +365,18 @@ public class ControlPage extends JFrame {
 					Stats.heading = line.substring(9);
 				else if(line.contains("Mode"))
 					Stats.vehicleMode = line.substring(6);
-				else if(line.contains("Longitude"))
-					Stats.longitude = line.substring(11);
-				else if(line.contains("Latitude"))
-					Stats.latitude = line.substring(10);
-				else if(line.contains("Home Longitude"))
-					Stats.homeLong = line.substring(16);
-				else if(line.contains("Home Latitude"))
-					Stats.homeLat = line.substring(15);
-				
-				
+				else if(line.contains("Longitude")){
+					if(line.contains("Home"))
+						Stats.homeLong = line.substring(16);
+					else
+						Stats.longitude = line.substring(11);
+				}
+				else if(line.contains("Latitude")){
+					if(line.contains("Home"))
+						Stats.homeLat = line.substring(15);
+					else
+						Stats.latitude = line.substring(10);
+				}
 				if(objectDetect)
 					vidAnalytics.setText(Stats.analytics);	
 			}
@@ -410,6 +410,6 @@ public class ControlPage extends JFrame {
 	 * Play video feed from drone
 	 */
 	private void playVideoFeed(){
-		mediaPlayerComponent.getMediaPlayer().playMedia("droneFootage.mkv");
+		mediaPlayerComponent.getMediaPlayer().playMedia(videoFeedParamsPath);
 	}
 }

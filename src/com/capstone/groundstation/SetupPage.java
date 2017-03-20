@@ -1,7 +1,6 @@
 package com.capstone.groundstation;
 
 import java.awt.EventQueue;
-import java.awt.FlowLayout;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -28,9 +27,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.List;
 
 import org.jxmapviewer.JXMapKit;
 import org.jxmapviewer.OSMTileFactoryInfo;
@@ -135,7 +132,7 @@ public class SetupPage extends JFrame {
 				dispose();
 				
 				ControlPage controlPage = new ControlPage(videoOn, objectDetect);
-				controlPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
+				//controlPage.setExtendedState(JFrame.MAXIMIZED_BOTH); 
 				controlPage.setVisible(true);
 			}
 		});
@@ -248,15 +245,16 @@ public class SetupPage extends JFrame {
 		
 		tileFactory.setThreadPoolSize(8);
 		
-		GeoPosition UofC = new GeoPosition(51.079948, -114.125534);
+		//GeoPosition home = new GeoPosition(51.079948, -114.125534);
+		GeoPosition home = new GeoPosition(50.93738, -114.11971 );
 		
 		wpm = new WayPointManager();
-		wpm.initPaint(UofC);
+		wpm.initPaint(home);
 		
 		jXMapKit.getMainMap().setOverlayPainter(wpm.getPainter());
 		
 		jXMapKit.setZoom(3);
-		jXMapKit.getMainMap().setAddressLocation(UofC);
+		jXMapKit.getMainMap().setAddressLocation(home);
 		jXMapKit.setAddressLocationShown(false);
 		
 		mapPanel.add(jXMapKit);
@@ -274,13 +272,13 @@ public class SetupPage extends JFrame {
 				DecimalFormat df = new DecimalFormat();
 				df.setMaximumFractionDigits(5);
 				
-				String entry = System.lineSeparator() + 
+				String entry = "\n" + 
 						"Waypoint " + waypointNum + 
-						System.lineSeparator() + 
+						"\n" + 
 						"Lon: " + df.format(marker.getLongitude()) + " "  +
-						System.lineSeparator() +
+						"\n" +
 						"Lat: " + df.format(marker.getLatitude()) + 
-						System.lineSeparator();
+						"\n";
 				
 				waypointNum++;
 				
