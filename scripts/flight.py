@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -53,7 +54,7 @@ order = chunks(coords,2)
 
 target = "127.0.0.1:14552"
 
-print 'Connecting to ' + target + '...'
+#print 'Connecting to ' + target + '...'
 vehicle = connect(target, wait_ready=True)
 
 
@@ -66,30 +67,30 @@ cmds.wait_ready()
 #Arm vehicle and takeoff/hover at target altitude
 def arm_and_takeoff(aTargetAltitude):
 
-    print "Basic pre-arm checks"
+    #print "Basic pre-arm checks"
     # Don't let the user try to arm until autopilot is ready
     while not vehicle.is_armable:
-        print " Waiting for vehicle to initialise..."
+        #print " Waiting for vehicle to initialise..."
         time.sleep(1)
 
         
-    print "Arming motors"
+    #print "Arming motors"
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
 
     while not vehicle.armed:      
-        print " Waiting for arming..."
+        #print " Waiting for arming..."
         time.sleep(1)
 
-    print "Taking off!"
+    #print "Taking off!"
     vehicle.simple_takeoff(aTargetAltitude)
 
     # Wait until the vehicle reaches a safe height before processing the goto (next command should not be executed immediately.
     while True:
-        print " Altitude: ", vehicle.location.global_relative_frame.alt      
+        #print " Altitude: ", vehicle.location.global_relative_frame.alt      
         if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95: #Break once just below target altitude
-            print "Reached target altitude"
+            #print "Reached target altitude"
             break
         time.sleep(1)
 
@@ -252,13 +253,13 @@ def goto_position_target_local_ned(north, east, down):
 
 
 
-def goto(tLocation,dNorth, dEast, gotoFunction=vehicle.simple_goto):
+def goto(gimbalLoc, tLocation,dNorth, dEast, gotoFunction=vehicle.simple_goto):
     
     currentLocation = vehicle.location.global_relative_frame
     targetLocation = get_location_metres(currentLocation, dNorth, dEast)
     targetDistance = get_distance_metres(currentLocation, targetLocation)
     gotoFunction(targetLocation)
-    set_roi(tLocation)
+    set_roi(gimbalLoc)
 
     #print "DEBUG: targetLocation: %s" % targetLocation
     #print "DEBUG: targetLocation: %s" % targetDistance
@@ -274,12 +275,12 @@ def goto(tLocation,dNorth, dEast, gotoFunction=vehicle.simple_goto):
         #gimbalAngle = -90 + gimbalAngle
         #vehicle.gimbal.rotate(gimbalAngle,0,0)
 
-        vehicle.gimbal.target_location(tLocation)
+        vehicle.gimbal.target_location(gimbalLoc)
 
-        print "Distance to target: ", remainingDistance
+        #print "Distance to target: ", remainingDistance
         if remainingDistance < 1: #Just below target, in case of undershoot.
             time.sleep(2)
-            print "Reached target"
+            #print "Reached target"
             break;
         time.sleep(2)
 
@@ -339,7 +340,7 @@ def send_global_velocity(velocity_x, velocity_y, velocity_z, duration):
 
 
 home = vehicle.home_location
-print "Home location is: %s" % home
+#print "Home location is: %s" % home
 
 # sleep so we can see the change in map
 time.sleep(10)
@@ -354,9 +355,10 @@ radius = float(desiredRadius)
 #for each set of coordinates/waypoints
 for i in range(len(order)):
 
-    targetLocation = LocationGlobalRelative(float(order[i][0]),float(order[i][1]),0)
+    targetLocation = LocationGlobalRelative(float(order[i][0]),float(order[i][1]),alt)
+    gimbalLoc = LocationGlobalRelative(float(order[i][0]),float(order[i][1]), 0)
 
-    print("Target Position: %s") % targetLocation
+    #print("Target Position: %s") % targetLocation
     vehicle.simple_goto(targetLocation)
 
     while vehicle.mode.name=="GUIDED": #Stop action if we are no longer in guided mode.
@@ -370,12 +372,12 @@ for i in range(len(order)):
         #gimbalAngle = -90 + gimbalAngle
         #vehicle.gimbal.rotate(gimbalAngle,0,0)
 
-        vehicle.gimbal.target_location(targetLocation)
+        vehicle.gimbal.target_location(gimbalLoc)
 
-        print "Distance to target: ", remainingDistance
+        #print "Distance to target: ", remainingDistance
         if remainingDistance < 1: #Just below target, in case of undershoot.
             time.sleep(2)
-            print "Reached target"
+            #print "Reached target"
             break;
         time.sleep(2)
 
@@ -389,23 +391,23 @@ for i in range(len(order)):
 
 #Complete square parameter around waypoint
 
-    print("Completing square route around target")
-    print("NW Corner")
-    goto(targetLocation ,radius,-radius)
+    #print("Completing square route around target")
+    #print("NW Corner")
+    goto(gimbalLoc, targetLocation, radius, -radius)
 
-    print("NE Corner")
-    goto(targetLocation, 0,(2*radius))
+    #print("NE Corner")
+    goto(gimbalLoc, targetLocation, 0, (2*radius))
 
-    print("SE Corner")
-    goto(targetLocation, (-2*radius),0)
+    #print("SE Corner")
+    goto(gimbalLoc, targetLocation, (-2*radius),0)
 
-    print("SW Corner")
-    goto(targetLocation, 0,(-2*radius))
+    #print("SW Corner")
+    goto(gimbalLoc, targetLocation, 0,(-2*radius))
 
-    print("NW Corner")
-    goto(targetLocation, (2*radius),0)
+    #print("NW Corner")
+    goto(gimbalLoc, targetLocation, (2*radius),0)
 
-print "Returning to Launch"
+#print "Returning to Launch"
 
 set_roi(home)
 vehicle.gimbal.target_location(home)
@@ -414,5 +416,5 @@ vehicle.mode = VehicleMode("RTL")
 time.sleep(5)
 
 #Close vehicle object before exiting script
-print "Close vehicle object"
+#print "Close vehicle object"
 vehicle.close()

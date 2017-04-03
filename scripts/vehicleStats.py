@@ -4,7 +4,7 @@ import time
 
 # Connect to UDP endpoint (and wait for default attributes to accumulate)
 target = sys.argv[1] if len(sys.argv) >= 2 else '127.0.0.1:14555'
-print 'Connecting to ' + target + '...'
+#print 'Connecting to ' + target + '...'
 vehicle = connect(target, wait_ready=False)
 
 #vehicle.parameters['ARMING_CHECK']=-9
@@ -41,5 +41,5 @@ while True:
 
 
 vehicle.close()
-print "Done."
+#print "Done."
 
