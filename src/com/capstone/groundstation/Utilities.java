@@ -18,13 +18,11 @@ public class Utilities {
 	 */
 	public static void executeLaunchScripts() throws IOException{
 
-		ProcessBuilder pb1 = new ProcessBuilder(droneStatsScriptCmd);	//windows
-		//ProcessBuilder pb1 = new ProcessBuilder("python", "scripts/vehicleStats.py");			//linux
+		ProcessBuilder pb1 = new ProcessBuilder(droneStatsScriptCmd);	
 		statsProcess = pb1.start();
 		
-		ProcessBuilder pb2 = new ProcessBuilder(flightScriptCmd);												//windows
-		//ProcessBuilder pb2 = new ProcessBuilder();				//linux
-		flightProcess = pb2.start();
+		//ProcessBuilder pb2 = new ProcessBuilder(flightScriptCmd);			
+		//flightProcess = pb2.start();
 	}
 	
 	public static InputStream getStatsInputStream(){
@@ -63,6 +61,6 @@ public class Utilities {
 	
 	public static void closeScriptProcesses(){
 		statsProcess.destroy();
-		flightProcess.destroy();
+		//flightProcess.destroy();
 	}
 }

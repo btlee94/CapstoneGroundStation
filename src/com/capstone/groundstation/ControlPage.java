@@ -311,9 +311,7 @@ public class ControlPage extends JFrame {
 		jsch.fetchAnalyticData();
 	}
 	
-	private void runUpdateJson(){
-		String path = "droneJsonServer/public/drone.json";		//linux
-		
+	private void runUpdateJson(){		
 		final JsonWriter jw = new JsonWriter(jsonPath);
 		
 		final Runnable statsUpdater4 = new Runnable() {

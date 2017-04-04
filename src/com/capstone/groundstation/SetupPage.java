@@ -202,13 +202,11 @@ public class SetupPage extends JFrame {
 		altitudeLabel.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		altitudeField = new JTextField();
 		altitudeField.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		//altitude.setBorder(BorderFactory.createEmptyBorder());
 		
 		JLabel radiusLabel = new JLabel("Set Radius");
 		radiusLabel.setFont(new Font("Tahoma", Font.PLAIN, 15));
 		radiusField = new JTextField();
 		radiusField.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		//radius.setBorder(BorderFactory.createEmptyBorder());
 		
 		
 		waypointArea = new JTextArea();
@@ -245,8 +243,8 @@ public class SetupPage extends JFrame {
 		
 		tileFactory.setThreadPoolSize(8);
 		
-		//GeoPosition home = new GeoPosition(51.079948, -114.125534);
-		GeoPosition home = new GeoPosition(50.93738, -114.11971 );
+		//GeoPosition home = new GeoPosition(51.079948, -114.125534);	//U of C
+		GeoPosition home = new GeoPosition(50.93738, -114.11971 );		//Woodbine Athletic park - testing zone
 		
 		wpm = new WayPointManager();
 		wpm.initPaint(home);
